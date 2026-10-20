@@ -70,8 +70,9 @@ init:
         move    #>$ffffff,m3            ; linear: the clear walks r3
         move    r7,r3
         clr     a
-        rep     #$40
+        do      #$40,>dxzinit           ; do, not rep: interrupts stay serviced (tools/build/norep.py)
         move    a,x:(r3)+               ; every slot $00..$3f (verify_dirtystate)
+dxzinit:
         move    #>$800000,x0            ; d = -1, the pedal OFF ($3b = 0 from the clear):
                                         ; a pedal chosen later switches in and fades in
         move    x0,x:(r7+$3d)
@@ -104,8 +105,9 @@ proc:
         move    #$12,n3
         move    (r3)+n3
         clr     a
-        rep     #$2b
+        do      #$2b,>dxzswap           ; do, not rep
         move    a,x:(r3)+               ; $12..$3c
+dxzswap:
         move    x:(r7+$3f),x0
         move    x0,x:(r7+$3b)           ; the new pedal
 dtx_keep:
@@ -1066,7 +1068,8 @@ dtx_ln:
 ; ---------------------------------------------------------------------------
 dtx_div:
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>dxdivlp           ; do, not rep
         div     x0,a
+dxdivlp:
         move    a0,y1
         rts
