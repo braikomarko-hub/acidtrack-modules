@@ -39,17 +39,16 @@ built from your own.
 3. `make docs`, then `make check REMIX=<name>`, then `make bus REMIX=<name>` and flash as
    octabam describes.
 
-Notes for the octabam of mid-October 2026:
+Notes for the octabam of 20 October 2026:
 
-- `octa303` cannot share an image with `analog-bassdrum` or SYNTH MACHINE (same seams);
-  `dbx160` cannot share one with SIDECHAIN_COMPRESSOR (same hook and words) and takes
-  EQUALIZER's id.
-- `distorx` takes SUPER OD's FX id (`0x1b`), `devilish` takes `0x1e`. With both, every
-  non-stock FX2 id is claimed; octabam's `tools/remix/selftest.py` uses `0x1e` for two
-  fixture modules and needs another id for them, and its harvest table needs
-  `"octa303": ()` for the test remix.
-- dEVILish was on `0x1f` before 20 Oct 2026 (LOFI2 now uses it): a part saved with the old id
-  needs dEVILish chosen again on its tracks.
+- `octa303` cannot share an image with `analog-bassdrum`, `blackpyramids-303` or SYNTH MACHINE
+  (same seams); `dbx160` cannot share one with SIDECHAIN_COMPRESSOR (same hook and words) and
+  takes EQUALIZER's id.
+- FX ids: `devilish` `0x1e`, `distorx` `0x0a`. With both, every non-stock FX2 id is claimed;
+  octabam's `tools/remix/selftest.py` uses `0x1e` for two fixture modules and needs another id
+  for them, and its harvest table needs `"octa303": ()` for the test remix.
+- Before 20 Oct 2026 dEVILish was on `0x1f` (LOFI2's now) and DISTORX on `0x1b` (BBD's now): a
+  part saved with an old id needs the effect chosen again on its tracks.
 
 ## Credits and sources
 

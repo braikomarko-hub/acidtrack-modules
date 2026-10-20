@@ -30,7 +30,7 @@ MODULE = Module(
     key="DEVILISH",
     kind=Kind.DSP_EFFECT,
     category=Category.TRACK,
-    author="Marko Brajkovic", author_url="https://github.com/braikomarko-hub",
+    author="Marko Brajković", author_url="https://github.com/braikomarko-hub",
     proof=Proof.HARDWARE,
     proof_note="the owner's MKI, acidtrack images up to ACIDV71, October 2026: in daily use for days, many "
                "hours, on two or three OCTA303 tracks beside DisTorX; the Devil Fish engine is bit-exact in "

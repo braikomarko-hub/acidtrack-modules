@@ -14,10 +14,11 @@ line (OCTA303), fine on anything.
 DISTORX can be put on a track in the middle of a set and a pedal faded in
 when wanted. **MODE SD-1 is SUPER OD's circuit** — the same constants from
 the 1981 service notes, the same arithmetic — run at the sample rate since
-v8 (SUPER OD runs the clipper at 2×). DISTORX takes SUPER OD's FX id (0x1b);
-the two cannot be in one tree (the registry refuses two modules on one id).
-A part saved before v8 reads its MODE one step lower: SD-1 → OFF, RAT →
-SD-1, TURB → RAT (and a SUPER OD part opens on OFF).
+v8 (SUPER OD runs the clipper at 2×). FX id `0x0a`, the one id free in
+octabam on 20 Oct 2026; until then DISTORX sat on SUPER OD's `0x1b` (BBD's
+now), so a part saved with the old id needs DISTORX chosen again. A part
+saved before v8 reads its MODE one step lower: SD-1 → OFF, RAT → SD-1,
+TURB → RAT.
 
 ## Knobs
 

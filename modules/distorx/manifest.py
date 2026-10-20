@@ -326,14 +326,14 @@ MODULE = Module(
     name="distorx",
     key="DISTORX",
     kind=Kind.DSP_EFFECT,
-    category=Category.TRACK, author="braikomarko-hub", author_url="https://github.com/braikomarko-hub",
+    category=Category.TRACK, author="Marko Brajković", author_url="https://github.com/braikomarko-hub",
     proof=Proof.HARDWARE,
     proof_note="v9 on the owner's MK1, image ACIDV71 (BUILD 88, remix acidtrack), 20 Oct 2026: five DISTORX at once "
                "(T1 kick SD-1, T3 hats RAT, T5 OCTA303 SD-1, T6 TURB, with dEVILish), no clicks, no slow-downs, by ear. "
                "v7 (ACIDV68..ACIDV70) had junk blocks on T1 under load; v9 is lighter (289 vs 381 cycles/sample)",
     doc="SD-1 + RAT + Turbo RAT in one insert: MODE picks the pedal (OFF first), a 3 ms fade between them.",
     menu=MenuEntry(
-        fx2_id=0x1b,                  # SUPER OD's: a part saved with it opens as DISTORX, MODE SD-1
+        fx2_id=0x0a,                  # the one free id (Oct 2026); was SUPER OD's 0x1b, now JamCones' BBD
         donor_desc=0x400d58b8,        # DARK REV: 12 active slots
         abbr=b"DTX",
         fullname=b"DISTORX",

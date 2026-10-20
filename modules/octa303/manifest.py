@@ -49,7 +49,7 @@ MODULE = Module(
     key="OCTA303",
     kind=Kind.CF_PATCH,
     category=Category.MACHINES,
-    author="Marko Brajkovic",
+    author="Marko Brajković",
     author_url="https://github.com/braikomarko-hub",
     doc=("A FLEX track whose sample is named TB303* plays a circuit-modelled TB-303 (diode "
          "ladder, accent-sweep capacitor, RC slide; TB303D*/TB303SQD* add a pedal). PLAYBACK: "
