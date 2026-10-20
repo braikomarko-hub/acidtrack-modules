@@ -33,8 +33,10 @@ RESOLVER_STOCK = H("20300c00" "6002")
 DEVIL_ID = 0x1e
 
 
-def remix_inc(modules):
-    """remix.inc for octa303.s: dEVILish's FX id when the remix carries it."""
+def remix_inc(modules, remix=None):
+    """remix.inc for octa303.s: dEVILish's FX id when the remix carries it.
+
+    The build calls include(modules, remix) (schema.Linked.include); the remix is not needed here."""
     return "        .set    DEVIL_ID, 0x%x\n" % (DEVIL_ID if "DEVILISH" in modules else 0x100)
 
 
