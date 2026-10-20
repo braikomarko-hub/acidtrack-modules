@@ -10,6 +10,14 @@ Author: Marko Brajković ([braikomarko-hub](https://github.com/braikomarko-hub))
 and integration were written with Claude (Anthropic) as a coding assistant; every number below
 comes from the measurements and gates named beside it.
 
+**Another TB-303 for the Octatrack:** Zac Kyoti's
+[BLACKPYRAMIDS_303](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) (BLKPYRAMD) adapts Robin
+Schmidt's Open303 to the **DSP**: one voice per DSP core (one on T1–T4, one on T5–T8), in SPRING
+REV's space, voiced by ear. OCTA303 takes the other road: the voice runs on the **ColdFire**, one
+per track (the author plays three at once), gives up no stock effect, and its model is fitted to
+measurements of a real TB-303 (Din Sync's set, below) rather than tuned by ear. Both register
+their machine row with repeat98's ANALOG BD seams, so they cannot share an image.
+
 Markers as in `CHIP.md`: ✅ measured, 🟡 inferred.
 
 ## Using it
