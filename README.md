@@ -9,9 +9,10 @@ the Octatrack's OS 1.40C.
 | [`octa303`](modules/octa303/README.md) | ColdFire | **OCTA-303**: a circuit-modelled TB-303 voice, one per track, as a machine of its own (FUNC + SRC → OCTA-303). Calibrated against Din Sync's recordings of a real TB-303. Runs on the ColdFire, so it leaves the DSP to the effects (unlike Zac Kyoti's DSP-based BLACKPYRAMIDS_303, see its README). | the author's MKI |
 | [`devilish`](modules/devilish/README.md) | DSP FX (with `octa303`) | **dEVILish**: Robin Whittle's Devil Fish modifications for OCTA-303 tracks (filter FM, MUFF, sweep, slide, accent) | the author's MKI |
 | [`distorx`](modules/distorx/README.md) | DSP insert | **DISTORX**: BOSS SD-1, Pro Co RAT and Turbo RAT in one insert, MODE picks the pedal | the author's MKI |
+| [`dbx160`](modules/dbx160/README.md) | DSP insert + side-chain bus | **DBX 160**: the dbx 160 compressor (1976) from its schematic, true-RMS detector, ratio to infinity and beyond, KEY from any track over a one-word-per-track bus | the author's MKI |
 
-Coming: `dbx160` (the dbx 160 compressor with a light side-chain bus) and the `acidtrack`
-remix that puts them all together.
+The [`acidtrack`](remixes/acidtrack/README.md) remix puts them all together (with USB AUDIO OUT
+on MASTER and DARK REV as the one reverb): the author's live set.
 
 ## Status
 
@@ -22,7 +23,7 @@ repository is where they live. The same files are on the branch
 the author's octabam fork.
 
 Tested on one Octatrack MKI, OS 1.40C (October 2026): hours of playing with two or three
-OCTA-303 tracks, dEVILish and DISTORX, image `ACIDV71`. **Use at your own risk** and keep your
+OCTA-303 tracks, dEVILish and DISTORX, image `ACIDV71`, DBX 160 since 11 Oct 2026. **Use at your own risk** and keep your
 stock OS image and a way back (the Startup Menu's OS upgrade over MIDI/USB).
 
 ## Using them
@@ -40,7 +41,9 @@ built from your own.
 
 Notes for the octabam of mid-October 2026:
 
-- `octa303` cannot share an image with `analog-bassdrum` or SYNTH MACHINE (same seams).
+- `octa303` cannot share an image with `analog-bassdrum` or SYNTH MACHINE (same seams);
+  `dbx160` cannot share one with SIDECHAIN_COMPRESSOR (same hook and words) and takes
+  EQUALIZER's id.
 - `distorx` takes SUPER OD's FX id (`0x1b`), `devilish` takes `0x1e`. With both, every
   non-stock FX2 id is claimed; octabam's `tools/remix/selftest.py` uses `0x1e` for two
   fixture modules and needs another id for them, and its harvest table needs
@@ -69,6 +72,11 @@ module's README separates what was measured from what is inferred.
   Interfaces): the Devil Fish modifications and the TB-303 notes (gate length, accent and slide
   RC values).
 - **Tim Stinchcombe**, [TB-303 diode ladder analysis](https://www.timstinchcombe.co.uk/index.php?pge=diode2).
+- **dbx**, 160/161 manual and schematic, 160A cut sheet; **D. E. Blackmer**, US 3,681,618 (the
+  RMS detector).
+- **Zac Kyoti**, SIDECHAIN_COMPRESSOR in
+  [octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) (MIT): the dispatcher
+  hook site and the shared-window words DBX 160's bus uses, measured on an MKI.
 - **Roland**, TB-303 service notes; **BOSS**, SD-1 service notes; **Pro Co**, RAT schematics
   (as documented by ElectroSmash's RAT analysis).
 
