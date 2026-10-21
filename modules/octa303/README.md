@@ -6,7 +6,7 @@ its own PLAYBACK and SETUP pages. It needs no sample. It is calibrated against r
 TB-303 (Din Sync's x0xb0x reference set, 400 notes with known knob positions) and optionally plays
 Robin Whittle's Devil Fish modifications through the companion FX module `devilish`.
 
-Author: Marko Brajković ([braikomarko-hub](https://github.com/braikomarko-hub)). Engine, calibration
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)). Engine, calibration
 and integration were written with Claude (Anthropic) as a coding assistant; every number below
 comes from the measurements and gates named beside it.
 

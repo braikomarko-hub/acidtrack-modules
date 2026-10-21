@@ -1,6 +1,6 @@
 # acidtrack
 
-aCiDtRacK, Marko Brajković's live set on the Octatrack MKI: OCTA303 (the OCTA-303 machine),
+aCiDtRacK, MaMarko's (Marko Brajković's) live set on the Octatrack MKI: OCTA303 (the OCTA-303 machine),
 dEVILish (Devil Fish), DISTORX (SD-1 / RAT / Turbo RAT), dB666 (side-chain from any track),
 USB (MIDI and AUDIO OUT MASTER) and BRAIN with REMIX SWITCH (other remixes' `.RMX`
 images booted from the card without flashing); DARK REV is the one reverb. PLATE REV, SPRING REV, CHORUS,

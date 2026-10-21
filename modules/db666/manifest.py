@@ -92,7 +92,7 @@ MODULE = Module(
     name="db666",
     key="DB666",
     kind=Kind.DSP_EFFECT,
-    category=Category.TRACK, author="Marko Brajković", author_url="https://github.com/braikomarko-hub",
+    category=Category.TRACK, author="MaMarko", author_url="https://github.com/braikomarko-hub",
     proof=Proof.HARDWARE,
     proof_note="the owner's MKI, acidtrack images from 11 Oct 2026 to ACIDV71 (20 Oct): side-chain ducking by ear, "
                "hours of live use beside OCTA303, dEVILish and DISTORX; make check passed on the owner's tree. "

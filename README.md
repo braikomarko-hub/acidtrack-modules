@@ -53,7 +53,7 @@ Notes for the octabam of 20 October 2026:
 
 ## Credits and sources
 
-Author: Marko Brajković ([braikomarko-hub](https://github.com/braikomarko-hub)). Engines,
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)). Engines,
 calibration and integration were written with Claude (Anthropic) as a coding assistant; each
 module's README separates what was measured from what is inferred.
 

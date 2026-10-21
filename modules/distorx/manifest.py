@@ -326,7 +326,7 @@ MODULE = Module(
     name="distorx",
     key="DISTORX",
     kind=Kind.DSP_EFFECT,
-    category=Category.TRACK, author="Marko Brajković", author_url="https://github.com/braikomarko-hub",
+    category=Category.TRACK, author="MaMarko", author_url="https://github.com/braikomarko-hub",
     proof=Proof.HARDWARE,
     proof_note="v9 on the owner's MK1, image ACIDV71 (BUILD 88, remix acidtrack), 20 Oct 2026: five DISTORX at once "
                "(T1 kick SD-1, T3 hats RAT, T5 OCTA303 SD-1, T6 TURB, with dEVILish), no clicks, no slow-downs, by ear. "
