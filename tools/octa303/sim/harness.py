@@ -23,7 +23,7 @@ XFADER, SCN_WORK, SCN_AOFF, SCN_BOFF = 0x460d16c8, 0x80000ed4, 0x80000006, 0x800
 BANKP, PATB, STEPW, TICKB = 0x46c82456, 0x100b14d0, 0x800065b2, 0x800065b6   # v6.5: the gate's inputs
 BANK, PATNO, PSTR, TSTR = 0x41000000, 3, 0x8ed8, 0x91a
 PARTB, PART_OFF = 0x100b14cf, 0x8ed80                                        # v7.0: the machine's Part'
-DEVIL_ID = 0x1e          # modules/devilish/manifest.py FX_ID (test_octa303 checks they agree)
+DEVIL_ID = 0x10          # modules/devilish/manifest.py FX_ID (test_octa303 checks they agree)
 
 def remix_inc(devilish=True):
     """What the build writes as remix.inc (modules/octa303/manifest.py remix_inc)."""

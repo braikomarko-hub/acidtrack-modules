@@ -35,7 +35,7 @@ With dEVILish on the track, its SLID replaces the OCTA-303 SETUP page's SLID.
 ## How it works
 
 - **ColdFire:** the module is a menu entry with twelve knobs (a clone of DARK REV's descriptor,
-  FX id `0x1e`). The OCTA303 voice compares each track's live FX1 / FX2 id with that id
+  FX id `0x10`, PHASER's, which it replaces on both menus). The OCTA303 voice compares each track's live FX1 / FX2 id with that id
   (`DEVIL_ID`, handed to `octa303` through `remix.inc`) and, on a match, reads the slot's knobs
   from the frame builder's live lane — locks, scenes and crossfader applied (MIDI.md Appendix C).
   The knob laws are tables in `tools/octa303/o3tables.py` (`DF_*`); the engine is

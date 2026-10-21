@@ -30,7 +30,7 @@ RESOLVER_STOCK = H("20300c00" "6002")
 # dEVILish (modules/devilish) is a separate FX module; when a remix carries it, OCTA303's unit learns
 # its FX id through remix.inc, and without it DEVIL_ID is 0x100, which no id byte equals: every 303
 # track is then the classic one.  Kept equal to modules/devilish/manifest.py FX_ID (test_octa303).
-DEVIL_ID = 0x1e
+DEVIL_ID = 0x10
 
 
 def remix_inc(modules, remix=None):

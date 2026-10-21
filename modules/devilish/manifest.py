@@ -20,7 +20,9 @@ from remix.schema import (BusRole, Category, DspSection, Formatter, Harness, Kin
 
 # The FX id. OCTA303's unit compares the track's FX1/FX2 id bytes with it (DEVIL_ID in
 # modules/octa303/manifest.py, through remix.inc); test_octa303 checks the two agree.
-FX_ID = 0x1e
+# PHASER's id, replaced: every non-stock id is a module's (0x1e, dEVILish's until 21 Oct 2026, is
+# RESONATOR's), and a remix with dEVILish gives up PHASER on both menus (acidtrack lists neither).
+FX_ID = 0x10
 
 _PLAIN = Formatter.PLAIN
 _STEP = Formatter.STEPPED
@@ -39,6 +41,7 @@ MODULE = Module(
         "voice; the DSP passes the audio through.",
     menu=MenuEntry(
         fx2_id=FX_ID,
+        replaces="PHASER",
         donor_desc=0x400d58b8,        # DARK REV: 12 active slots (CHARACTER's donor, on hardware)
         abbr=b"dEVL",
         fullname=b"dEVILish",

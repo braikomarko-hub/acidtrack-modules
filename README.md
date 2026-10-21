@@ -44,11 +44,12 @@ Notes for the octabam of 20 October 2026:
 - `octa303` cannot share an image with `analog-bassdrum`, `blackpyramids-303` or SYNTH MACHINE
   (same seams); `dbx160` cannot share one with SIDECHAIN_COMPRESSOR (same hook and words) and
   takes EQUALIZER's id.
-- FX ids: `devilish` `0x1e`, `distorx` `0x0a`. With both, every non-stock FX2 id is claimed;
-  octabam's `tools/remix/selftest.py` uses `0x1e` for two fixture modules and needs another id
-  for them, and its harvest table needs `"octa303": ()` for the test remix.
-- Before 20 Oct 2026 dEVILish was on `0x1f` (LOFI2's now) and DISTORX on `0x1b` (BBD's now): a
-  part saved with an old id needs the effect chosen again on its tracks.
+- FX ids: `distorx` `0x0a`; `devilish` `0x10`, PHASER's, which it replaces on both menus (as
+  `dbx160` replaces EQUALIZER): since RESONATOR took `0x1e` (21 Oct 2026) every non-stock FX2 id
+  is a module's. octabam's `tools/remix/selftest.py` needs `"octa303": ()` and the acidtrack
+  line in its harvest table.
+- dEVILish was on `0x1f` before 20 Oct 2026 and on `0x1e` until 21 Oct; DISTORX was on `0x1b`
+  before 20 Oct: a part saved with an old id needs the effect chosen again on its tracks.
 
 ## Credits and sources
 
