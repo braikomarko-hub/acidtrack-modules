@@ -6,8 +6,8 @@ its own PLAYBACK and SETUP pages. It needs no sample. It is calibrated against r
 TB-303 (Din Sync's x0xb0x reference set, 400 notes with known knob positions) and optionally plays
 Robin Whittle's Devil Fish modifications through the companion FX module `devilish`.
 
-Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)). Engine, calibration
-and integration were written with Claude (Anthropic) as a coding assistant; every number below
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)): the idea, the listening and the tests on the unit.
+**The code was written by Claude (Anthropic)**: engine, calibration, integration and gates. Every number below
 comes from the measurements and gates named beside it.
 
 **Another TB-303 for the Octatrack:** Zac Kyoti's

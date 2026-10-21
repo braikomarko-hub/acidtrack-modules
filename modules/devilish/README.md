@@ -7,8 +7,9 @@ level into the filter, the filter's frequency and feedback, the envelopes, the s
 mods live and where an effect after the voice cannot reach. Take dEVILish off and the voice is the
 plain TB-303, sample for sample. On any other track it does nothing.
 
-Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)), written with Claude
-(Anthropic) as a coding assistant. Markers as in `CHIP.md`: ✅ measured, 🟡 inferred.
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)): the idea, the listening and the tests on the unit.
+**The code was written by Claude (Anthropic)**: engine, calibration, integration and gates.
+Markers as in `CHIP.md`: ✅ measured, 🟡 inferred.
 
 ## Knobs
 

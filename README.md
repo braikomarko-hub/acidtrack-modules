@@ -53,9 +53,9 @@ Notes for the octabam of 20 October 2026:
 
 ## Credits and sources
 
-Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)). Engines,
-calibration and integration were written with Claude (Anthropic) as a coding assistant; each
-module's README separates what was measured from what is inferred.
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)): the idea, the listening and the tests on the unit.
+**The code was written by Claude (Anthropic)**: engines, calibration, integration and gates.
+Each module's README separates what was measured from what is inferred.
 
 - **Sam Banks**, [octabam](https://github.com/sambanks/octabam) (MIT): the remixer, the build,
   the emulator port and the gates these modules are checked with.

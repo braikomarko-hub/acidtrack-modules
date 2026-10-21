@@ -6,6 +6,9 @@ the pedal; changing it fades to the dry signal and back in about 3 ms, so a
 scene or a p-lock can switch pedals without a click. Built for a TB-303
 line (OCTA303), fine on anything.
 
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)): the idea, the listening and the tests on the unit.
+**The code was written by Claude (Anthropic)**: engine, calibration, integration and gates.
+
 > **T1:** v7 tore track 1's read-back block under load (16-sample bursts of junk, "On the unit").
 > v9, a quarter lighter and without PAD, played clean on T1 on the owner's MK1 (20 Oct 2026,
 > "On the unit (v9)"): one session so far. If junk returns on T1, report it with the load.

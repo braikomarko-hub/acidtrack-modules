@@ -4,6 +4,9 @@ A model of the dbx 160 compressor/limiter (1976), built from its schematic and
 its manual, as a per-track insert on EQUALIZER's id — with a side-chain KEY from
 any track over a one-word-per-track bus.
 
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)): the idea, the listening and the tests on the unit.
+**The code was written by Claude (Anthropic)**: engine, calibration, integration and gates.
+
 The name: decibels and the Devil (it sits beside dEVILish in the author's remix).
 dbx is a trademark of Harman; this module is not affiliated with or endorsed by
 dbx or Harman, and the name dbx 160 below only says which unit it models. It was
