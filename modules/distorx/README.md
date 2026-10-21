@@ -162,13 +162,13 @@ CHORUS + PLATE REV + SPRING REV is 1,743 words up to the 35 SPRING REV words
 DARK REV still calls (P:0x01586), which cut the run there: DISTORX fits with
 157 to spare. A remix that keeps DARK REV and also places another module
 of more than 157 words gives up a second, separate run for it. aCiDtRacK
-gives up PHASER: its 207 words join EQUALIZER's 282 (DBX 160 is on
-EQUALIZER's id) into 489, where DBX 160 (297 + 66 words) goes.
+gives up PHASER: its 207 words join EQUALIZER's 282 (dB666 is on
+EQUALIZER's id) into 489, where dB666 (297 + 66 words) goes.
 
 ## On the unit
 
 - **ACIDDTX1** (aCiDtRacK, MK1, 14 Oct 2026): every MODE sounds as rendered,
-  the MODE fade is clean, DBX 160 and the rest of the remix unchanged. One
+  the MODE fade is clean, dB666 and the rest of the remix unchanged. One
   defect: a **16-sample block of noise** now and then (about 200 in four
   minutes, in clusters at one phase of the pattern), on T1 and on T5, in
   every MODE. Measured on the owner's USB take: each is exactly one
@@ -254,7 +254,7 @@ What changed:
 **On the unit (v7 — v8 was never flashed — the owner's MK1, images ACIDV68 to ACIDV70, 15–19 Oct 2026):**
 
 - On tracks other than T1: hours of playing, on claps and on two OCTA303 tracks with dEVILish,
-  beside DBX 160 and the reverbs; no junk blocks. A 7.5-minute recording (19 Oct): peak −2.2 dBFS,
+  beside dB666 and the reverbs; no junk blocks. A 7.5-minute recording (19 Oct): peak −2.2 dBFS,
   no dropouts.
 - On T1 (a kick): the junk blocks stay. The PAD that silences them moves with the load: the owner
   turned it up to 14 as effects were added (v8 reads at most 8), and at other times had to go back down to stop the clicks.
@@ -287,7 +287,7 @@ What changed:
 
 - The `-pword` (dirty LFO word) renders of `verify_distorx`: skipped on the owner's tree, whose
   `dsp_host` lacks the option. `make check REMIX=acidtrack` otherwise passes there (20 Oct 2026).
-- Instruction forms: DISTORX uses SUPER OD's and DBX 160's (both on the
+- Instruction forms: DISTORX uses SUPER OD's and dB666's (both on the
   MK1) and CHARACTER's `bne`, `beq` and `do #n` (Sam's MKII), outside the
   sample loops. New beside those, all plain register moves: `move rN,x0`
   and `move nN,x0` for the four limits the RAT loop keeps in r1, r2, r3

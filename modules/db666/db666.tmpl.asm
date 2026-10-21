@@ -1,14 +1,14 @@
 ; ---------------------------------------------------------------------------
-; DBX 160 -- the dbx 160 compressor/limiter (1976), a per-track insert, and
+; dB666 -- the dbx 160 compressor/limiter (1976), a per-track insert, and
 ; the side-chain bus tap.
 ;
-; GENERATED (do not edit) from dbx160.tmpl.asm by generate_asm.py (constants from
-; manifest.py). Edit the template, then: python3 modules/dbx160/generate_asm.py
+; GENERATED from db666.tmpl.asm by generate_asm.py (constants from
+; manifest.py). Edit the template, then: python3 modules/db666/generate_asm.py
 ;
 ; Insert contract: frames in place at x:(r0)/x:(r0+n0), knobs from r6,
 ; state in this instance's r7 block. Reads one word of the shared window.
 ;
-; ---- the 160 (schematic + manual; modules/dbx160/README.md) -----------------
+; ---- the 160 (schematic + manual; modules/db666/README.md) -----------------
 ;   ms   = (L^2 + R^2)/2, or KEY's block mean square from the bus
 ;   S   += alpha (ms - S)            the RMS 208: tau = 34.7 ms (125 dB/s)
 ;   L    = log2 S / 32               clb + normf + LOG (transient's form)
@@ -47,31 +47,31 @@ proc:
         move    x:(r6+$0),a
         and     #>$7fffff,a
         move    a,x0
-        move    #>$010204,y1
+        move    #>@STRETCH@,y1
         mac     x0,y1,a
         move    a,x0                    ; x
-        move    #>$427046,y1
-        move    #>$bd8fba,a
+        move    #>@THSPAN@,y1
+        move    #>@THLO@,a
         mac     x0,y1,a
         move    a,x:(r7+$00)            ; T/32
 ; ---- RATI: k/2, 0 .. 0.496 over 0..100, then 0.5 .. 1.0 over 101..127 -------
         move    x:(r6+$1),a
         and     #>$7fffff,a
         move    a,x0                    ; w = knob/128
-        move    #>$5143bf,y1
+        move    #>@K1@,y1
         mpy     x0,y1,b                 ; the 160: k/2 = w K1
         move    b,y0
-        move    #>$640000,y1
+        move    #>@WRAT@,y1
         sub     y1,a                    ; w - 100/128
         move    a,x0
-        move    #>$4bda13,y1
+        move    #>@K2Q@,y1
         mpy     x0,y1,a                 ; (w - 100/128) K2/4
         asl     #$2,a,a
         add     #>$400000,a             ; the 160A: 1/2 + (w - 100/128) K2
         move    a,x1
         move    x:(r6+$1),a
         and     #>$7fffff,a
-        move    #>$640000,y1
+        move    #>@WRAT@,y1
         cmp     y1,a                    ; w - 100/128
         move    x1,a                    ; (moves keep the flags)
         tle     y0,a                    ; w <= 100/128: the 160's k
@@ -81,7 +81,7 @@ proc:
         and     #>$7fffff,a
         sub     #>$400000,a
         move    a,x0
-        move    #>$1ac8e1,y1
+        move    #>@OUTK@,y1
         mpy     x0,y1,a
         move    a,x:(r7+$02)
 ; ---- KNEE (page 2, slot 6: x:(r6+$c) bits 16-23): 1 = OverEasy ---------------
@@ -150,7 +150,7 @@ proc:
         move    x:(r7+$07),y0
         sub     y0,a                    ; ms - S
         move    a,x0
-        move    #>$001561,y1
+        move    #>@ALPHA@,y1
         mpy     x0,y1,b
         move    x:(r7+$07),a
         move    x:(r7+$08),a0
@@ -190,22 +190,22 @@ proc:
         sub     x0,a                    ; over = L - T
         move    a,x1                    ; over
 ; OverEasy: d = over + W/2 clamped to [0, W], soft = d^2/(2W)
-        move    #>$06a4d4,x0
+        move    #>@W2@,x0
         add     x0,a
         move    #0,x0
         tmi     x0,a                    ; d < 0: 0
-        move    #>$0d49a8,x0
+        move    #>@W32@,x0
         cmp     x0,a
         tgt     x0,a                    ; d > W: W
         move    a,x0
         mpy     x0,x0,a                 ; d^2
         move    a,x0
-        move    #>$4d104d,y1
+        move    #>@IW8@,y1
         mpy     x0,y1,a
         asl     #$3,a,a                 ; d^2 / (2W)
         move    a,y0
         move    x1,a
-        move    #>$06a4d4,x0
+        move    #>@W2@,x0
         cmp     x0,a                    ; over - W/2
         move    y0,a                    ; inside or below the knee: the curve
         tgt     x1,a                    ; above it: over itself
@@ -226,10 +226,10 @@ proc:
         mpy     -x0,y1,a
         move    x:(r7+$02),x0
         add     x0,a
-        move    #>$c00000,x0
+        move    #>@TMIN@,x0
         cmp     x0,a
         tlt     x0,a
-        move    #>$100000,x0
+        move    #>@TMAX@,x0
         cmp     x0,a
         tgt     x0,a
         move    a,x1                    ; g, amplitude bits / 32
@@ -245,7 +245,7 @@ proc:
         move    a1,x1
         move    x1,a
         asr     #$d,a,a                 ; idx = top 5 bits
-        add     #>$000021,a
+        add     #>@EXP_AT@,a
         move    a1,n5
         move    x1,a
         and     #>$1fff,a

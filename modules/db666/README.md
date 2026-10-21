@@ -1,8 +1,13 @@
-# `dbx160` — DBX 160
+# `db666` — dB666
 
-The dbx 160 compressor/limiter (1976), modelled from its schematic and its
-manual, as a per-track insert on EQUALIZER's id — with a side-chain KEY from
+A model of the dbx 160 compressor/limiter (1976), built from its schematic and
+its manual, as a per-track insert on EQUALIZER's id — with a side-chain KEY from
 any track over a one-word-per-track bus.
+
+The name: decibels and the Devil (it sits beside dEVILish in the author's remix).
+dbx is a trademark of Harman; this module is not affiliated with or endorsed by
+dbx or Harman, and the name dbx 160 below only says which unit it models. It was
+called DBX 160 in the author's images up to ACIDV73MP (October 2026).
 
 The 160's character is its detector: dbx's true-RMS module (RMS 208, M2 on
 the schematic; David Blackmer's log-domain RMS, US 3,681,618, one of the
@@ -40,7 +45,7 @@ block's mean square, at its core's half of the shared window:
 | T1–T4 | payload B (core 1) | Y:$3BFF8–$3BFFB |
 | T5–T8 | payload A (core 0) | Y:$33FF8–$33FFB |
 
-A DBX 160 on either core reads the one word its KEY names, once per block.
+A dB666 on either core reads the one word its KEY names, once per block.
 One 24-bit store is atomic, so the two cores need no generation counter; a
 word is at most one block (0.36 ms) old. The tap uses a, r0, r1, n1, x0 —
 inside the set stock reloads after this site — and replays the displaced
@@ -58,7 +63,7 @@ modules together (the same hook site and words).
 slot; the tap run for all eight tracks before every block, both payloads'
 variants), 11 Oct 2026:
 
-- **Bit-exact** against `dbx160_ref.fixed()`, tap included: defaults, every
+- **Bit-exact** against `db666_ref.fixed()`, tap included: defaults, every
   knob at its ends, OverEasy, KEY from T1 (payload B's half) and T7
   (payload A's), KEY out of range, a split block, LFO-dirty page words, the
   other seven tracks carrying a loud square (a wrong word ducks).
@@ -87,12 +92,12 @@ measurement of the ducking on the unit.
 
 - A recording of the ducking on the unit, against the model's attack and
   release.
-- Instruction forms without a stock site (`verify_dbx160` lists them).
+- Instruction forms without a stock site (`verify_db666` lists them).
 - OverEasy's real width; the 160A's own curves are not published.
 
 ## Gates
 
-`tools/verify/verify_dbx160.py`: generated source, bit-exact on eight
+`tools/verify/verify_db666.py`: generated source, bit-exact on eight
 settings (the bus planted with `-pokey`), the passthroughs, the manual's
 attack and release, the ratios, the key, silence, every knob.
 
@@ -101,9 +106,9 @@ attack and release, the ratios, the key, silence, every knob.
 | file | what |
 |---|---|
 | `manifest.py` | the module, the hook, the bus words, every constant |
-| `dbx160.tmpl.asm` | the DSP code with `@NAME@` constants (`@COREBASE@`, `@SBASE@` per payload) |
-| `generate_asm.py` | writes `dbx160.asm`; `--check` |
-| `dbx160_ref.py` | the 160 in float (`DBX160`) and the module bit for bit (`fixed`, `tap`) |
+| `db666.tmpl.asm` | the DSP code with `@NAME@` constants (`@COREBASE@`, `@SBASE@` per payload) |
+| `generate_asm.py` | writes `db666.asm`; `--check` |
+| `db666_ref.py` | the 160 in float (`DB666`) and the module bit for bit (`fixed`, `tap`) |
 
 ## Sources
 

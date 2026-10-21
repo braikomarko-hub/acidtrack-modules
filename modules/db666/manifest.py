@@ -1,7 +1,7 @@
-"""DBX 160 -- the dbx 160 compressor/limiter (1976), with a light side-chain bus.
+"""dB666 -- the dbx 160 compressor/limiter (1976), with a light side-chain bus.
 
 A per-track insert on EQUALIZER's id (0x0c), modelled from the 160's
-schematic and its manual (modules/dbx160/README.md):
+schematic and its manual (modules/db666/README.md):
 
   * the detector is dbx's TRUE RMS (the RMS 208 module, M2: Blackmer's
     log-domain RMS, US 3,681,618): the mean square of the signal through one
@@ -19,7 +19,7 @@ schematic and its manual (modules/dbx160/README.md):
   * KEY: OFF (the track itself) or T1..T8, read from the SIDE-CHAIN BUS: a
     hook in the stock dispatcher (where SIDECHAIN_COMPRESSOR hooks) writes
     each track's block mean square, ONE word per track, into the shared
-    window; any DBX 160 on either core reads the one word it needs.
+    window; any dB666 on either core reads the one word it needs.
 Stereo-linked: one detector on (L^2 + R^2)/2, one gain for both channels.
 """
 import math as _m
@@ -89,21 +89,21 @@ _P = Formatter.PLAIN
 _B = Formatter.BIPOLAR
 
 MODULE = Module(
-    name="dbx160",
-    key="DBX 160",
+    name="db666",
+    key="DB666",
     kind=Kind.DSP_EFFECT,
     category=Category.TRACK, author="Marko Brajković", author_url="https://github.com/braikomarko-hub",
     proof=Proof.HARDWARE,
     proof_note="the owner's MKI, acidtrack images from 11 Oct 2026 to ACIDV71 (20 Oct): side-chain ducking by ear, "
                "hours of live use beside OCTA303, dEVILish and DISTORX; make check passed on the owner's tree. "
-               "Bit-exact against its fixed-point model (verify_dbx160)",
-    doc="dbx 160 compressor: true-RMS detector, threshold, ratio to infinity and beyond, side-chain KEY from any track.",
+               "Bit-exact against its fixed-point model (verify_db666)",
+    doc="A model of the dbx 160 compressor: true-RMS detector, threshold, ratio to infinity and beyond, side-chain KEY from any track.",
     menu=MenuEntry(
         fx2_id=0x0c,
         replaces="EQUALIZER",
         donor_desc=0x400d58b8,        # DARK REV: 12 active slots
-        abbr=b"DBX",
-        fullname=b"DBX 160",
+        abbr=b"d666",
+        fullname=b"dB666",
         build_tag=False,
     ),
     params=(
@@ -125,7 +125,7 @@ MODULE = Module(
         Param(b"", 0), Param(b"", 0), Param(b"", 0), Param(b"", 0), Param(b"", 0),
     ),
     dsp=DspSection(
-        asm="modules/dbx160/dbx160.asm",
+        asm="modules/db666/db666.asm",
         ptable=PTABLE,
         priority=19,
         bus_role=BusRole.NONE,
@@ -149,6 +149,6 @@ MODULE = Module(
                                    "four per core's half", half_relative=True),
     )),
     harness=Harness(layout_char=None, is_server=False),
-    gates=(Gate("tools/verify/verify_dbx160.py", remix_arg=False),),
+    gates=(Gate("tools/verify/verify_db666.py", remix_arg=False),),
     dear={"THRS": 0, "RATI": 127, "OUT": 127, "KEY": 5, "MIX": 127, "KNEE": 1},
 )

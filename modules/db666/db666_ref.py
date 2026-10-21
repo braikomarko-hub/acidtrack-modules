@@ -1,10 +1,10 @@
-"""DBX 160 references.
+"""dB666 references.
 
-1. `DBX160` -- the 160 in floating point: the true-RMS detector (mean square
+1. `DB666` -- the 160 in floating point: the true-RMS detector (mean square
    through one time constant), the dB-domain threshold and ratio, a perfect
    VCA. What the module is MEASURED against, and what the manual's numbers
    are checked on.
-2. `fixed()` -- dbx160.asm, instruction for instruction, in integers (the
+2. `fixed()` -- db666.asm, instruction for instruction, in integers (the
    SUPER OD model's primitives: modules/distorx/distorx_ref.py), the bus tap
    included. The gate requires the assembled code to match it bit for bit.
 """
@@ -19,7 +19,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "tools"))
 import toolpath  # noqa: E402,F401
 
-_spec = importlib.util.spec_from_file_location("dbx160_manifest", HERE / "manifest.py")
+_spec = importlib.util.spec_from_file_location("db666_manifest", HERE / "manifest.py")
 M = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(M)
 _spec = importlib.util.spec_from_file_location("superod_ref_prims", HERE.parent / "distorx/distorx_ref.py")
@@ -47,7 +47,7 @@ def threshold_db(thrs):
     return M.THR_LO + min(thrs / 127.0, 1.0) * (M.THR_HI - M.THR_LO)
 
 
-class DBX160:
+class DB666:
     def __init__(self, fs=FS, THRS=96, RATI=50, OUT=64, KNEE=0, MIX=127):
         self.fs = fs
         self.alpha = 1.0 - math.exp(-1.0 / (fs * M.TAU))

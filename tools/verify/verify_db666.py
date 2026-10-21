@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DBX 160 render gates: the assembled module against its bit-exact model,
+"""dB666 render gates: the assembled module against its bit-exact model,
 and the model against the dbx 160's own manual.
 
 Renders the module straight through dsp_host (the render-gate shape: the id
@@ -9,8 +9,8 @@ dbt_tap writes it); the tap itself runs in the dispatcher, which make check
 boots under the ColdFire port.
 
 Gates:
-  generated     -> dbx160.asm is what the template and the manifest make
-  bit-exact     -> the dump's code equals modules/dbx160/dbx160_ref.fixed():
+  generated     -> db666.asm is what the template and the manifest make
+  bit-exact     -> the dump's code equals modules/db666/db666_ref.fixed():
                    defaults, every knob at both ends, OverEasy, KEY from a
                    planted bus word on either half, KEY out of range, a split
                    block, LFO-dirty page words
@@ -23,7 +23,7 @@ Gates:
   silence       -> silence in, exact zeros out
   every knob    -> renders without dsp_host dying
 
-    python3 tools/verify/verify_dbx160.py
+    python3 tools/verify/verify_db666.py
 """
 import importlib.util
 import math
@@ -38,7 +38,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1])); import too
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 FRAMES = 16
-_spec = importlib.util.spec_from_file_location("dbx160_ref", ROOT / "modules/dbx160/dbx160_ref.py")
+_spec = importlib.util.spec_from_file_location("db666_ref", ROOT / "modules/db666/db666_ref.py")
 REF = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(REF)
 FS = int(REF.FS)
@@ -84,7 +84,7 @@ def run_gates(render, dirty_words=True):
     sine = q23(0.6 * np.sin(2 * np.pi * 110 * np.arange(N) / FS))
     kickbus = {REF.bus_address(0): 0x200000, REF.bus_address(6): 0x050000}
 
-    print("bit-exact against dbx160_ref.fixed():")
+    print("bit-exact against db666_ref.fixed():")
     cases = [("defaults, noise", noise, knobs(), 0, 0, None),
              ("THRS 0 RATI 127 OUT 127 KNEE OVER, sine", sine, knobs(THRS=0, RATI=127, OUT=127, KNEE=1), 0, 0, None),
              ("THRS 127 RATI 0 OUT 0 MIX 1, noise", noise, knobs(THRS=127, RATI=0, OUT=0, MIX=1), 0, 0, None),
@@ -151,7 +151,7 @@ def run_gates(render, dirty_words=True):
     bus = {REF.bus_address(0): word}
     L, _ = render(xq, knobs(THRS=64, RATI=100, KEY=1), bus=bus)
     duck = level_db(L[-8000:]) - level_db(xq[-8000:])
-    ref = REF.DBX160(THRS=64, RATI=100)
+    ref = REF.DB666(THRS=64, RATI=100)
     ref.S = word / (1 << 23)
     want = ref.gain_db(ref.S)
     check(f"KEY T1, a planted -6 dBFS word: a -30 dBFS tone ducked {duck:+.2f} dB (the law: {want:+.2f})",
@@ -181,7 +181,7 @@ def run_gates(render, dirty_words=True):
 def dsp_host_render():
     from remix import registry
     import send_probe
-    mod = registry.by_name("dbx160")
+    mod = registry.by_name("db666")
     send = registry.by_name("send")
     K = mod.knob_map()
     mem = f"out/dsp/_audition_{mod.name}_A.mem"
@@ -195,7 +195,7 @@ def dsp_host_render():
         sys.exit(f"no {mem} -- build it first:\n  python3 tools/remix/audition.py {mod.name} out/dry/drums_110.wav")
     init, proc = send_probe.entry_points(mem, mod.menu.fx2_id)
     if (init, proc) == send_probe.entry_points(mem, send.menu.fx2_id):
-        sys.exit(f"fx id 0x{mod.menu.fx2_id:02x} resolves to SEND's entry points -- dbx160 is NOT in this dump")
+        sys.exit(f"fx id 0x{mod.menu.fx2_id:02x} resolves to SEND's entry points -- db666 is NOT in this dump")
     print(f"entries from dispatch tables: init=P:0x{init:04x} proc=P:0x{proc:04x}")
 
     def render(samples, kn, split=0, pfrac=0, bus=None):
@@ -226,16 +226,16 @@ def dsp_host_render():
 
 
 def main():
-    r = subprocess.run([sys.executable, "modules/dbx160/generate_asm.py", "--check"],
+    r = subprocess.run([sys.executable, "modules/db666/generate_asm.py", "--check"],
                        capture_output=True, text=True)
-    check("dbx160.asm is generated from the template and the manifest", r.returncode == 0,
+    check("db666.asm is generated from the template and the manifest", r.returncode == 0,
           (r.stdout + r.stderr).strip())
     src = pathlib.Path("tools/harness/dsp_host/dsp_host.cpp")
     dirty = src.exists() and "-pword" in src.read_text()
     fails = run_gates(dsp_host_render(), dirty_words=dirty)
     if fails:
-        sys.exit(f"verify_dbx160: {len(fails)} gate(s) failed")
-    print("verify_dbx160: all gates pass")
+        sys.exit(f"verify_db666: {len(fails)} gate(s) failed")
+    print("verify_db666: all gates pass")
 
 
 if __name__ == "__main__":
