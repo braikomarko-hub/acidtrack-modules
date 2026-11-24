@@ -91,7 +91,7 @@ class DB666:
 Q = M.CONSTQ
 C = {k: s24(v) for k, v in Q.items() if k != "EXP_AT"}
 PT = [s24(v) for v in M.PTABLE]
-BUS_A, BUS_B = M.BUS_A, M.BUS_B
+REC_A, REC_B, LEVEL_AT = M.REC_A, M.REC_B, M.LEVEL_AT
 
 
 def tap(frames_lr):
@@ -103,8 +103,10 @@ def tap(frames_lr):
 
 
 def bus_address(track):
-    """Where track (0-based) publishes: payload B's half for T1..T4."""
-    return BUS_B + track if track < 4 else BUS_A + (track - 4)
+    """Where track (0-based) publishes its level: payload B's half for T1..T4.
+    Each track has a record of four words (BEAT COUNT LAST LEVEL)."""
+    rec = REC_B + 4 * track if track < 4 else REC_A + 4 * (track - 4)
+    return rec + LEVEL_AT
 
 
 def block_constants(kn, bus):
@@ -137,7 +139,7 @@ def block_constants(kn, bus):
     key = (kn[3] & 0x7F0000) >> 16
     st["keyon"] = 1 <= key <= 8
     t = (key - 1) & 7
-    addr = (0x033FF4 if t > 3 else 0x03BFF8) + t
+    addr = (0x037FE0 if t > 3 else 0x03FFF0) + 4 * t + LEVEL_AT   # the record's LEVEL word
     st["keyword"] = bus.get(addr, 0)
     return st
 

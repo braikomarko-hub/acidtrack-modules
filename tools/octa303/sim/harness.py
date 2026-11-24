@@ -19,20 +19,50 @@ VOICE_BASE, VSTR, SETTINGS = 0x800049d8, 0xa8, 0x100b14f0
 CUR, FRAME, RS, STACK = 0x80100000, 0x80200000, 0x80300000, 0x80400000
 CURVALS, CVSTR = 0x80000810, 72
 FXID1, FXID2 = 0x80000ec4, 0x80000ecc
-XFADER, SCN_WORK, SCN_AOFF, SCN_BOFF = 0x460d16c8, 0x80000ed4, 0x80000006, 0x80000007   # v6.7.2
+VREC, PINGW = 0x80000110, 0x800000e0     # v7.1: the DSP voice records (+ ping*0x200 + 64*track), the ping
 BANKP, PATB, STEPW, TICKB = 0x46c82456, 0x100b14d0, 0x800065b2, 0x800065b6   # v6.5: the gate's inputs
 BANK, PATNO, PSTR, TSTR = 0x41000000, 3, 0x8ed8, 0x91a
 PARTB, PART_OFF = 0x100b14cf, 0x8ed80                                        # v7.0: the machine's Part'
 DEVIL_ID = 0x10          # modules/devilish/manifest.py FX_ID (test_octa303 checks they agree)
 
-def remix_inc(devilish=True):
-    """What the build writes as remix.inc (modules/octa303/manifest.py remix_inc)."""
-    return '        .set    DEVIL_ID, 0x%x\n' % (DEVIL_ID if devilish else 0x100)
+def hooks_flags():
+    """modules/hooks's flags (FLAGS), read without importing the build's schema."""
+    import ast
+    tree = ast.parse(open(os.path.join(ROOT, 'modules', 'hooks', 'manifest.py')).read())
+    return next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
+                and any(getattr(t, 'id', None) == 'FLAGS' for t in n.targets)).values()
 
-def source(devilish=True):
+def remix_inc(devilish=True, seam=False):
+    """What the build writes as remix.inc (modules/octa303/manifest.py remix_inc): OCTA303
+    alone, so every HOOKS flag 0 (its own bytes); O3_SEAM 1 with OCTA303 SEAM (the hybrid)."""
+    return ('        .set    DEVIL_ID, 0x%x\n' % (DEVIL_ID if devilish else 0x100)
+            + '        .set    O3_SEAM, %d\n' % (1 if seam else 0)
+            + ''.join('        .set    %s, 0\n' % f for f in hooks_flags()))
+
+def _unflag(s, seam=False):
+    """The .if / .else / .endif blocks on a HOOKS flag resolved as OCTA303 alone builds them (every
+    flag 0), and on O3_SEAM as asked: cfsim has no conditional assembly."""
+    flags, out, keep = set(hooks_flags()), [], [True]
+    for line in s.split('\n'):
+        tok = line.split('|')[0].split()
+        if tok[:1] == ['.if']:
+            if tok[1:] == ['O3_SEAM']:
+                keep.append(bool(seam)); continue
+            if tok[1:] and tok[1] not in flags and all(keep):    # nested in a dropped block: any symbol
+                raise ValueError('cfsim harness: .if on ' + ' '.join(tok[1:]) + ', not a HOOKS flag')
+            keep.append(False)
+        elif tok[:1] == ['.else']:
+            keep[-1] = not keep[-1]
+        elif tok[:1] == ['.endif']:
+            keep.pop()
+        elif all(keep):
+            out.append(line)
+    return '\n'.join(out)
+
+def source(devilish=True, seam=False):
     s = open(SRC_PATH).read()
     assert s.count('.include "remix.inc"') == 1
-    return s.replace('        .include "remix.inc"', remix_inc(devilish).rstrip('\n'), 1)
+    return _unflag(s.replace('        .include "remix.inc"', remix_inc(devilish, seam).rstrip('\n'), 1), seam)
 
 class Rig:
     def __init__(self, src=None):
@@ -40,16 +70,13 @@ class Rig:
         m = self.cpu.mem
         m.w(CURSOR, 'l', CUR); m.w(FP_PTR, 'l', FRAME); m.w(RS_PTR, 'l', RS)
         self.seen = []; self.feed = None; self.slots = {}
-        self.scene()
-    def scene(self, track=None, pairs=None, xf=0, aoff=0, boff=0):
-        """v6.7.2: the scene working copy (pairs = 64 bytes [A_k, B_k] for track; default: no lock
-        anywhere), the crossfader and the two disable flags."""
-        m = self.cpu.mem
-        if track is None:
-            for i in range(8 * 64): m.w(SCN_WORK + i, 'b', 0xFF)
-        else:
-            for i, b in enumerate(pairs): m.w(SCN_WORK + 64 * track + i, 'b', b & 0xFF)
-        m.w(XFADER, 'l', xf & M32); m.w(SCN_AOFF, 'b', aoff); m.w(SCN_BOFF, 'b', boff)
+        self.ping = 0; self.vover = {}
+    def vrec(self, track, slot, hws, ping=None):
+        """v7.1: what the frame builder left in track's DSP voice record for FX slot (1, 2): six page-1
+        halfwords (raw << 8, locks, scenes and LFOs applied); None = the lane's knobs << 8."""
+        if ping is not None: self.ping = ping
+        if hws is None: self.vover.pop((track, slot), None)
+        else: self.vover[(track, slot)] = tuple(hws)
     def path(self, slot, p):
         for i, ch in enumerate(p.encode() + b'\0'): self.cpu.mem.w(SETTINGS + 0x448 * slot + i, 'b', ch)
     def voice(self, track, alive, slot):
@@ -81,7 +108,8 @@ class Rig:
         """v6.5: the gate's inputs, seq = (hold, step, tick, slides, length) -- slides split between the
         trigless-trig mask (+8) and the trigless-lock mask (+16); a trig mask (+0) the gate must ignore."""
         m = self.cpu.mem
-        hold, step, tick, slides, L = seq
+        hold, step, tick, slides, L = seq[:5]
+        m.w(0x800065b8, 'l', seq[5] if len(seq) > 5 else 1)     # v7.4: the transport word
         m.w(CURVALS + CVSTR * track + 13, 'b', hold)
         m.w(STEPW, 'w', step); m.w(TICKB, 'b', tick)
         m.w(BANKP, 'l', BANK); m.w(PATB, 'b', PATNO)
@@ -101,21 +129,35 @@ class Rig:
         if df is not None:
             p1, p2 = (18, 0x32) if slot == 1 else (24, 0x38)
             for i in range(6): m.w(lane + p1 + i, 'b', df[i]); m.w(lane + p2 + i, 'b', df[6 + i])
+        # v7.1: the voice records -- this ping's from the lane (or vrec()), the other ping's garbage
+        m.w(PINGW, 'l', self.ping)
+        for pg in (0, 1):
+            rec = VREC + pg * 0x200 + 64 * track
+            for s, (p1, hw) in ((1, (18, 6)), (2, (24, 12))):
+                over = self.vover.get((track, s))
+                for i in range(6):
+                    v = (over[i] if over is not None else m.r(lane + p1 + i, 'b') << 8) if pg == self.ping else 0x5A5A
+                    m.w(rec + 2 * (hw + i), 'w', v & 0xFFFF)
         if seq is not None: self.seq(track, seq)
         for i, w in enumerate(words): m.w(FRAME + 2 * i, 'w', w)
         m.w(NIBBLE + track, 'b', 0x10 if startbit else 0)
         m.w(CUR, 'l', 0xABCDEF00)
+        m.w(CURSOR, 'l', CUR)                        # v8.6: each call's header at CUR (the skip advances CURSOR, as stock)
         self.feed = feed
         self.cpu.a[7] = STACK
         for v in reversed([track, 0x800000e4, start, end]): self.cpu.a[7] -= 4; m.w(self.cpu.a[7], 'l', v)
         sp0 = self.cpu.a[7]
+        n_seen = len(self.seen)
         for r in range(8): self.cpu.d[r] = 0x11110000 + r
         for r in range(7): self.cpu.a[r] = 0x22220000 + r
         self.cpu.call('sy_render')
         assert self.cpu.a[7] == sp0, 'stack not balanced'
         for r in range(2, 8): assert self.cpu.d[r] == 0x11110000 + r, 'd%d not preserved' % r
         for r in range(2, 7): assert self.cpu.a[r] == 0x22220000 + r, 'a%d not preserved' % r
-        assert self.cpu.d[0] == 0xC0DE0000 + track, 'stock return value not handed back'
+        # v8.6: a latched OCTA303 track skips the stock call (CX OSC's way) and returns 0, as CX OSC's
+        # sy_call; the frame loop discards the value (0x4000d52c: d0 is overwritten at once)
+        self.stock_called = len(self.seen) > n_seen
+        assert self.cpu.d[0] == (0xC0DE0000 + track if self.stock_called else 0), 'stock return value not handed back'
         n = end - start
         return [m.r(CUR + 16 + 8 * i, 'l') for i in range(n)], [m.r(CUR + 20 + 8 * i, 'l') for i in range(n)]
 
@@ -123,18 +165,3 @@ def sample_feed(seed):
     tab = [(random.Random(seed * 1000 + i).randrange(-30000, 30000) << 16) & M32 for i in range(16)]
     return lambda i: tab[i]
 SILENCE = lambda i: 0
-
-def scene_morph(knobs, pairs, slot, xf, aoff=0, boff=0):
-    """o3_morph in Python: the six page-1 knobs (lane bytes, lock slot slot..slot+5) through the
-    pairs (64 bytes [A_k, B_k]) at crossfader xf."""
-    xf = min(max(xf, 0), 127); w = xf * 258; out = []
-    for i, k in enumerate(knobs):
-        k = min(k & 0xFF, 127)
-        a = pairs[2 * (slot + i)]; b = pairs[2 * (slot + i) + 1]
-        a = a - 256 if a > 127 else a; b = b - 256 if b > 127 else b
-        if aoff: a = -1
-        if boff: b = -1
-        if a < 0: a = k
-        if b < 0: b = k
-        out.append((a * w + b * (32768 - w) + 16384) >> 15)
-    return tuple(out)

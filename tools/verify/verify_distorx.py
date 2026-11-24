@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """DISTORX render gates: the assembled module against its bit-exact model,
-the SD-1 against SUPER OD and the 1981 service notes, the RAT against its
+the SD-1 against the 1981 service notes, the RAT against its
 own circuit and ElectroSmash's analysis.
 
 Renders the module straight through dsp_host (the render-gate shape: the id
@@ -14,11 +14,8 @@ Gates:
                     block, page words dirtied the way an LFO leaves them,
                     MODE changes mid-render (the fade and the switch), MODE
                     knob values past TURB
-  SD-1 = SUPER OD -> with MODE on SD-1 the output is SUPER OD's bit for bit
-                    once the start-up fade is over (when modules/superod is
-                    in the tree; distorx_ref carries SUPER OD's model either way)
   MIX 0          -> exact passthrough, every MODE, every other knob extreme
-  service notes  -> SD-1: the 1981 WAVEFORM CHECKING page, +-20 % (SUPER OD's)
+  service notes  -> SD-1: the 1981 WAVEFORM CHECKING page, +-20 %
   the analysis   -> RAT: ElectroSmash's clipping-amplifier curve (64 dB near
                     700 Hz at full DISTORTION; 24 dB at 1.5 kHz with 1 k), the
                     FILTER's corner at full left (475 Hz), the diodes' level
@@ -83,7 +80,7 @@ def knobs(**kw):
 
 def acid_line(n, seed=1):
     """A 303-like line: a saw through a resonant 4-pole low-pass whose
-    cutoff falls after every note, at -6 dBFS (verify_superod's)."""
+    cutoff falls after every note, at -6 dBFS."""
     rng = np.random.default_rng(seed)
     step = int(FS * 60 / 132 / 4)
     notes = rng.choice([36, 36, 39, 43, 48, 46, 41], size=n // step + 1)
@@ -169,23 +166,6 @@ def run_gates(render, dirty_words=True):
         d = max(max(abs(a - b) for a, b in zip(L, mL)), max(abs(a - b) for a, b in zip(R, mR)))
         check(f"{label}: max |dsp - model| = {d} LSB", d == 0)
 
-    # ---- SD-1 = SUPER OD ------------------------------------------------------
-    sod = ROOT / "modules/superod/superod_ref.py"
-    if sod.exists():
-        sp = importlib.util.spec_from_file_location("superod_ref", sod)
-        SOD = importlib.util.module_from_spec(sp)
-        sp.loader.exec_module(SOD)
-        for label, sig, kn in (("defaults, acid", acid, {}),
-                               ("DRIV 127 TONE 0 IN 127 LEVL 100, square", square,
-                                dict(DRIV=127, TONE=0, IN=127, LEVL=100)),
-                               ("MIX 60 DRIV 30, noise", noise, dict(MIX=60, DRIV=30))):
-            L, _ = render(sig, knobs(**kn))
-            sL, _, _ = SOD.fixed(sig[:len(L)], sig[:len(L)], SOD.knob_words(**kn), frames=FRAMES)
-            d = max(abs(a - b) for a, b in zip(L[FADE:], sL[FADE:]))
-            check(f"SD-1 = SUPER OD after the {FADE}-sample start-up fade ({label}): {d} LSB", d == 0)
-    else:
-        print("  [info] SD-1 = SUPER OD: modules/superod is not in this tree (distorx_ref carries its model)")
-
     # ---- MIX 0 ------------------------------------------------------------------
     for m in (0, 1, 2):
         ok = True
@@ -199,7 +179,7 @@ def run_gates(render, dirty_words=True):
         ok &= L == sig[:len(L)] and R == sig[:len(R)]
     check("v8 MODE OFF (the default): exact passthrough, every other knob at an extreme (noise, square, acid)", ok)
 
-    # ---- the SD-1's service notes (SUPER OD's gate) ----------------------------------
+    # ---- the SD-1's service notes ----------------------------------------------------
     print("SD-1: the 1981 service notes (WAVEFORM CHECKING), 150 Hz square, 200 mVp-p:")
     n = FRAMES * 900
     tt = np.arange(n) / FS
@@ -324,9 +304,9 @@ def run_gates(render, dirty_words=True):
             sl = slice(FS // 5, len(y) - D)
             e = 10 * np.log10(np.mean((y[D:][sl] - tr[sl]) ** 2) / np.mean(tr[sl] ** 2))
             check(f"{kn}: the module vs the circuit at 8x, band-limited (aliasing): {e:.1f} dB "
-                  f"(SUPER OD: -31 .. -44 dB; the 2x core: -40 .. -56)", e < -31)
+                  f"(the 2x core: -40 .. -56)", e < -31)
     except ImportError:
-        print("  [info] the 8x ground truth needs scipy -- skipped")
+        print("  [SKIP] the 8x ground truth needs scipy")
 
     # ---- silence ------------------------------------------------------------------
     for m in (0, 1, 2):
@@ -439,7 +419,7 @@ def precedent():
     if not stock.exists():
         subprocess.run([sys.executable, "tools/build/dsp_disasm_all.py"], capture_output=True)
     if not stock.exists():
-        print("  [info] precedent: out/dsp/payload_A.asm missing (tools/build/dsp_disasm_all.py) -- skipped")
+        print("  [SKIP] precedent: out/dsp/payload_A.asm missing (tools/build/dsp_disasm_all.py)")
         return
 
     def norm(line):

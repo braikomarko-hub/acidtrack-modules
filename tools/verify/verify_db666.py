@@ -30,6 +30,7 @@ import math
 import pathlib
 import struct
 import subprocess
+import tempfile
 import sys
 
 import numpy as np
@@ -186,8 +187,7 @@ def dsp_host_render():
     K = mod.knob_map()
     mem = f"out/dsp/_audition_{mod.name}_A.mem"
     host = "vendor/dsp56300/build/source/dsp_host/dsp_host"
-    tmp = pathlib.Path("out/_dbxgate")
-    tmp.mkdir(parents=True, exist_ok=True)
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="dbxgate."))   # per process (TRAPS: trap-tmp-race)
     pathlib.Path(mem).unlink(missing_ok=True)
     subprocess.run([sys.executable, "tools/remix/audition.py", mod.name, "out/dry/drums_110.wav"],
                    capture_output=True)
@@ -225,6 +225,145 @@ def dsp_host_render():
     return render
 
 
+def tap_gates():
+    """The side-chain tap (dbt_tap) and its BEAT/COUNT/LAST handshake, run as
+    the proc in dsp_host with the block at X:$00 (-audio 0). dsp_host's setup
+    leaves x:$420 = 4, so the tap serves T5's record in payload A's half."""
+    from remix import registry
+    import send_probe
+    mod = registry.by_name("db666")
+    mem = f"out/dsp/_audition_{mod.name}_A.mem"
+    host = "vendor/dsp56300/build/source/dsp_host/dsp_host"
+    init, _proc = send_probe.entry_points(mem, mod.menu.fx2_id)
+    # dbt_tap's offset from init, from the assembled module
+    d = pathlib.Path(tempfile.mkdtemp(prefix="dbxtap."))
+    src = (pathlib.Path("modules/db666/db666.asm").read_text()
+           .replace("$fab1e0", "$000400").replace("@ROFF@", "$37fe0"))
+    (d / "s.asm").write_text(src)
+    r = subprocess.run(["vendor/dsp56300/build/source/dsp_host/dsp_asm", "-in", str(d / "s.asm"), "-org", "0",
+                        "-out", str(d / "s.bin"), "-sym", str(d / "s.sym")], capture_output=True, text=True)
+    if r.returncode != 0:
+        sys.exit(f"dsp_asm failed on db666.asm for the tap's offset:\n{r.stdout}\n{r.stderr}")
+    sym = dict((n, int(v, 16)) for n, v in (ln.split() for ln in (d / "s.sym").read_text().splitlines() if ln.strip()))
+    tapat = init + sym["dbt_tap"] - sym["init"]
+    rec = REF.REC_A + 4 * 0                      # T5 = track 4, the first record of payload A's half
+    BEAT, COUNT, LAST, LEVEL = rec, rec + 1, rec + 2, rec + 3
+    rng = np.random.default_rng(666)
+    frames = q23(rng.uniform(-0.9, 0.9, FRAMES * 12))   # mono: dsp_host puts each sample on L and R
+
+    def run(blocks, poke):
+        src_raw = d / "in.raw"
+        src_raw.write_bytes(b"".join(struct.pack("<i", m) for m in frames[:FRAMES * blocks]))
+        cmd = [host, "-mem", mem, "-init", f"{init:x}", "-proc", f"{tapat:x}", "-inst", "1", "-r7", "1",
+               "-alloc", "0", "-inmask", "1", "-audio", "0", "-frames", str(FRAMES), "-blocks", str(blocks),
+               "-in", str(src_raw), "-out", str(d / "out.raw"),
+               "-pokey", ",".join(f"{a:x}={v & 0xffffff:x}" for a, v in poke.items()),
+               "-peeky", ",".join(f"{a:x}" for a in (BEAT, COUNT, LAST, LEVEL))]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            sys.exit(f"dsp_host failed for the tap:\n{r.stdout}\n{r.stderr}")
+        got = {}
+        for ln in r.stdout.splitlines():
+            ln = ln.strip()
+            if ln.startswith("Y:0x"):
+                a, v = ln[2:].split(" = ")
+                got[int(a, 16)] = int(v, 16)
+        return [got[a] for a in (BEAT, COUNT, LAST, LEVEL)]
+
+    last_block = lambda n: REF.tap([w for m in frames[FRAMES * (n - 1):FRAMES * n] for w in (m, m)])
+    print(f"the side-chain tap (dbt_tap at P:0x{tapat:04x}, T5's record at Y:0x{rec:05x}):")
+    b, c, l, v = run(3, {LEVEL: 0x123456})
+    check("nobody keys: asleep, LEVEL written 0, COUNT and LAST untouched", (b, c, l, v) == (0, 0, 0, 0),
+          f"BEAT COUNT LAST LEVEL = {b:x} {c:x} {l:x} {v:x}")
+    b, c, l, v = run(3, {BEAT: 0x800007, LAST: 0x800007, LEVEL: 0x123456})
+    check("the same nonzero beat, COUNT 0 (a sign-extended word): asleep, LAST kept",
+          (b, c, l, v) == (0x800007, 0, 0x800007, 0), f"BEAT COUNT LAST LEVEL = {b:x} {c:x} {l:x} {v:x}")
+    b, c, l, v = run(1, {BEAT: 5, LEVEL: 0x123456})
+    check(f"a new beat: LAST = BEAT, COUNT = {REF.M.WANT_BLOCKS}, LEVEL = db666_ref.tap() of the block",
+          (l, c, v) == (5, REF.M.WANT_BLOCKS, last_block(1)), f"COUNT {c} LAST {l:x} LEVEL {v:06x} model {last_block(1):06x}")
+    b, c, l, v = run(9, {BEAT: 5, LEVEL: 0x123456})
+    check("the same beat: counts down and keeps summing for WANT_BLOCKS blocks",
+          (c, v) == (0, last_block(9)), f"COUNT {c} LEVEL {v:06x} model {last_block(9):06x}")
+    b, c, l, v = run(10, {BEAT: 5, LEVEL: 0x123456})
+    check("one block more: asleep, LEVEL 0", (c, v) == (0, 0), f"COUNT {c} LEVEL {v:06x}")
+    b, c, l, v = run(2, {BEAT: 6, COUNT: 1, LAST: 5, LEVEL: 0x123456})
+    check("a beat that changed while counting: refilled", (c, l) == (REF.M.WANT_BLOCKS - 1, 6),
+          f"COUNT {c} LAST {l:x}")
+
+    # the effect's side: a dB666 with KEY T1 writes its heartbeat to T1's BEAT word; OFF writes nothing
+    init_, proc_ = send_probe.entry_points(mem, mod.menu.fx2_id)
+    K = mod.knob_map()
+    t1 = REF.REC_B                                # T1's record (BEAT first)
+    t8 = REF.REC_A + 4 * 3                        # T8's: the record an OFF (t = 7) would name
+
+    def run_fx(key, blocks):
+        pv = [0] * 12
+        for name, v in knobs(KEY=key).items():
+            pv[K[name]] = v
+        src_raw = d / "in.raw"
+        src_raw.write_bytes(b"".join(struct.pack("<i", m) for m in frames[:FRAMES * blocks]))
+        cmd = [host, "-mem", mem, "-init", f"{init_:x}", "-proc", f"{proc_:x}", "-inst", "1", "-r7", "1",
+               "-alloc", "0", "-inmask", "1", "-frames", str(FRAMES), "-blocks", str(blocks),
+               "-in", str(src_raw), "-out", str(d / "out.raw"), "-params", ",".join(str(x) for x in pv),
+               "-pokey", f"{t1:x}=abcdef,{t8:x}=abcdef", "-peeky", f"{t1:x},{t8:x}"]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode != 0:
+            sys.exit(f"dsp_host failed for the effect's heartbeat:\n{r.stdout}\n{r.stderr}")
+        vals = [int(ln.split(" = ")[1], 16) for ln in r.stdout.splitlines() if ln.strip().startswith("Y:0x")]
+        if len(vals) != 2:
+            sys.exit(f"dsp_host printed {len(vals)} Y peeks, not 2:\n{r.stdout}")
+        return vals
+    on3, on5 = run_fx(1, 3), run_fx(1, 5)
+    check("KEY T1: the heartbeat goes into T1's BEAT word, one step a block", on3[0] == 3 and on5[0] == 5,
+          f"after 3 blocks {on3[0]:x}, after 5 {on5[0]:x}")
+    off = run_fx(0, 4)
+    check("KEY OFF: no BEAT word is written (T1's and T8's, the one an OFF names, keep a sentinel)",
+          off == [0xabcdef, 0xabcdef], " ".join(f"{v:x}" for v in off))
+
+
+def precedent():
+    """Every instruction FORM dB666 uses (the tap included), looked up in
+    stock's own payloads (AGENTS.md: "an instruction form the chip has never
+    run is not proven by the port"); after verify_distorx. A form with no
+    stock site is REPORTED, not failed."""
+    import re
+    stock = pathlib.Path("out/dsp/payload_A.asm")
+    if not stock.exists():
+        subprocess.run([sys.executable, "tools/build/dsp_disasm_all.py"], capture_output=True)
+    if not stock.exists():
+        print("  [SKIP] precedent: out/dsp/payload_A.asm missing (tools/build/dsp_disasm_all.py)")
+        return
+
+    def norm(line):
+        m = re.match(r"^[0-9a-f]{6}: (\S+)(?:\s+(.*?))?\s*;", line)
+        if not m:
+            return None
+        ops = (m.group(2) or "")
+        ops = re.sub(r"\$[0-9a-f]+|\b\d+\b", "#", ops)
+        ops = re.sub(r"\br[0-7]\b", "rN", ops)
+        ops = re.sub(r"\bn[0-7]\b", "nN", ops)
+        ops = re.sub(r"\bm[0-7]\b", "mN", ops)
+        return f"{m.group(1)} {ops}".strip()
+    have = set()
+    for tag in ("A", "B"):
+        f = pathlib.Path(f"out/dsp/payload_{tag}.asm")
+        if f.exists():
+            have |= {n for n in map(norm, f.read_text().splitlines()) if n}
+    src = (pathlib.Path("modules/db666/db666.asm").read_text()
+           .replace("$fab1e0", "$000400").replace("@ROFF@", "$3fff0"))
+    d = pathlib.Path(tempfile.mkdtemp(prefix="dbxprec."))
+    (d / "s.asm").write_text(src)
+    r = subprocess.run(["vendor/dsp56300/build/source/dsp_host/dsp_asm", "-in", str(d / "s.asm"),
+                        "-org", "800", "-out", str(d / "s.bin"), "-sym", str(d / "s.sym"), "-list"],
+                       capture_output=True, text=True)
+    ours = {n for n in map(norm, r.stdout.splitlines()) if n}
+    missing = sorted(ours - have)
+    print(f"  [info] instruction forms: {len(ours)} used, {len(ours) - len(missing)} with a stock site"
+          + ("" if not missing else "; WITHOUT one (watch these on the first flash):"))
+    for m in missing:
+        print(f"           {m}")
+
+
 def main():
     r = subprocess.run([sys.executable, "modules/db666/generate_asm.py", "--check"],
                        capture_output=True, text=True)
@@ -233,6 +372,10 @@ def main():
     src = pathlib.Path("tools/harness/dsp_host/dsp_host.cpp")
     dirty = src.exists() and "-pword" in src.read_text()
     fails = run_gates(dsp_host_render(), dirty_words=dirty)
+    tap_gates()
+    fails = FAILS
+    print("instruction forms:")
+    precedent()
     if fails:
         sys.exit(f"verify_db666: {len(fails)} gate(s) failed")
     print("verify_db666: all gates pass")

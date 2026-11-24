@@ -1,7 +1,8 @@
 """dB666 -- the dbx 160 compressor/limiter (1976), with a light side-chain bus.
 
-A per-track insert on EQUALIZER's id (0x0c), modelled from the 160's
-schematic and its manual (modules/db666/README.md):
+A per-track insert with an id of its own (0x1b preferred; it takes no stock
+effect's id, and its code runs in a given-up effect's words), modelled from the 160's schematic and its manual
+(modules/db666/README.md):
 
   * the detector is dbx's TRUE RMS (the RMS 208 module, M2: Blackmer's
     log-domain RMS, US 3,681,618): the mean square of the signal through one
@@ -17,9 +18,11 @@ schematic and its manual (modules/db666/README.md):
     (-1:1, the 160A's "negative compression") over 101..127;
   * OUTPUT GAIN (R80), +-20 dB;
   * KEY: OFF (the track itself) or T1..T8, read from the SIDE-CHAIN BUS: a
-    hook in the stock dispatcher (where SIDECHAIN_COMPRESSOR hooks) writes
-    each track's block mean square, ONE word per track, into the shared
-    window; any dB666 on either core reads the one word it needs.
+    hook in the stock dispatcher (where SIDECHAIN_COMPRESSOR hooks) keeps a
+    record of four words per track in the shared window (BEAT COUNT LAST
+    LEVEL); a keyed dB666 writes its heartbeat to BEAT and reads LEVEL, the
+    block's mean square, which the tap computes only while a dB666 keys
+    that track.
 Stereo-linked: one detector on (L^2 + R^2)/2, one gain for both channels.
 """
 import math as _m
@@ -48,13 +51,20 @@ KNEE_DB = 10.0                               # ASSUMED OverEasy width (the 160A'
 DB_PER_BIT = 10 * _m.log10(2.0)              # 3.0103 dB per bit of MEAN SQUARE
 
 # ---- the side-chain bus ------------------------------------------------------
-# One word per track, the block's mean square (L^2 + R^2)/2 over 16 frames, in
-# the last words of each core's half of the shared window. Payload A writes
-# tracks 5-8 at $33ff8.., payload B tracks 1-4 at $3bff8..; any core reads
-# track t (0-based) at $3bff8 + t (t < 4) or $33ff4 + t (t >= 4). Inside the
-# region SIDECHAIN_COMPRESSOR measured as never written by stock code (its
-# last $202 words of each half) and zeroed by each payload's own init.
-BUS_A, BUS_B = 0x33FF8, 0x3BFF8
+# The top of T8's and T4's FX2 slots (+$3FF0): above every stock effect's
+# extent (DARK REV +$3DA2) and inside Y:0x37f00..0x3ffff, which payload B's
+# boot zero loop clears. (Until 26 Oct 2026 one word per track sat at
+# $33ff8 / $3bff8; the demand loader's window code now starts below $33ff8
+# and stops payload A's boot zero loop at 0x33dc3. 26-29 Oct: one word per
+# track at +$3FF8.) One record of four words per track, BEAT COUNT LAST LEVEL, from +$3FF0 of
+# each core's half: payload A tracks 4..7 at $37ff0.., payload B tracks 0..3
+# at $3fff0... A dB666 whose KEY names the track writes its heartbeat to BEAT
+# each block; the tap (the only writer of COUNT, LAST and LEVEL) sums the
+# block only while BEAT changed within the last WANT_BLOCKS blocks. Track t
+# (0-based)'s LEVEL: $3fff0 + 4t + 3 (t < 4) or $37fe0 + 4t + 3 (t >= 4).
+REC_A, REC_B = 0x37FF0, 0x3FFF0
+LEVEL_AT = 3
+WANT_BLOCKS = 8
 
 # P table: LOG[i] = log2(0.5 + i/64)/32 (33), EXP[i] = 2^(i/32)/2 (33; the
 # last is 1.0, held at full scale).
@@ -83,7 +93,7 @@ CONST = {
     "STRETCH": 1.0 / 127.0,
 }
 CONSTQ = {k: _q(v) for k, v in CONST.items()}
-CONSTQ.update(EXP_AT=EXP_AT)
+CONSTQ.update(EXP_AT=EXP_AT, WANT=WANT_BLOCKS)
 
 _P = Formatter.PLAIN
 _B = Formatter.BIPOLAR
@@ -94,13 +104,13 @@ MODULE = Module(
     kind=Kind.DSP_EFFECT,
     category=Category.TRACK, author="MaMarko", author_url="https://github.com/braikomarko-hub",
     proof=Proof.HARDWARE,
-    proof_note="the owner's MKI, acidtrack images from 11 Oct 2026 to ACIDV71 (20 Oct): side-chain ducking by ear, "
-               "hours of live use beside OCTA303, dEVILish and DISTORX; make check passed on the owner's tree. "
-               "Bit-exact against its fixed-point model (verify_db666)",
+    proof_note="the owner's MKI, acidtrack images on EQUALIZER's id from 11 Oct 2026, with the bus at today's "
+               "+$3FF8 words in ACIDV79 (27 Oct) and ACIDV81 (28 Oct): side-chain ducking by ear, hours of live use "
+               "beside OCTA303, dEVILish, DISTORX and AtoMizer. On its own id (this form: AGU nops, the tap asleep unless a KEY names its track, a one-cycle sum): "
+               "not yet on the unit. Bit-exact against its fixed-point model (verify_db666)",
     doc="A model of the dbx 160 compressor: true-RMS detector, threshold, ratio to infinity and beyond, side-chain KEY from any track.",
     menu=MenuEntry(
-        fx2_id=0x0c,
-        replaces="EQUALIZER",
+        fx2_id=0x1b,                  # preferred, not a stock id: the remix may move it (registry.assign_ids)
         donor_desc=0x400d58b8,        # DARK REV: 12 active slots
         abbr=b"d666",
         fullname=b"dB666",
@@ -127,7 +137,7 @@ MODULE = Module(
     dsp=DspSection(
         asm="modules/db666/db666.asm",
         ptable=PTABLE,
-        priority=19,
+        priority=25,                  # 19 is STUTTR's and VOCODER's
         bus_role=BusRole.NONE,
         ybase=YBase.NEVER,
         r7_latch_slot=None,
@@ -135,19 +145,21 @@ MODULE = Module(
         hooks=(
             # SIDECHAIN_COMPRESSOR's `sctap` site: the dispatcher's FX1 entry,
             # every track, every block, the track's audio at X:0..$1f. The
-            # displaced `move x:>$208,r6` is replayed at the end of dbt_tap.
+            # displaced `move x:>$208,r6` is replayed inside dbt_tap, after its address arithmetic.
             DspHook({"A": 0x004a7, "B": 0x0029c}, (0x66f000, 0x000208), "dbt_tap",
-                    "dispatcher: publish every track's block mean square, one word"),
+                    "dispatcher: every keyed track's block mean square, into its record"),
         ),
         subst={
-            "A": {"@COREBASE@": "4", "@SBASE@": "$33ff8"},
-            "B": {"@COREBASE@": "0", "@SBASE@": "$3bff8"},
+            "A": {"@ROFF@": "$37fe0"},     # REC_A - 4 x 4: T5..T8 are tracks 4..7
+            "B": {"@ROFF@": "$3fff0"},     # REC_B - 0: T1..T4 are tracks 0..3
         },
     ),
     claims=Claims(dsp_ranges=(
-        DspRange("y", 0x3FF8, 0x8, "the side-chain bus: one word per track, "
-                                   "four per core's half", half_relative=True),
+        DspRange("y", 0x7FF0, 0x10, "the side-chain bus: a record of four words per track "
+                                    "(BEAT COUNT LAST LEVEL), four per core's half", half_relative=True),
     )),
+    conflicts=(("SIDECHAIN_COMPRESSOR",
+                "the same dispatcher hook site (sctap): both tap every track's block at the FX1 entry"),),
     harness=Harness(layout_char=None, is_server=False),
     gates=(Gate("tools/verify/verify_db666.py", remix_arg=False),),
     dear={"THRS": 0, "RATI": 127, "OUT": 127, "KEY": 5, "MIX": 127, "KNEE": 1},

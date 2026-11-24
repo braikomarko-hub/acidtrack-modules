@@ -198,7 +198,7 @@ class CPU:
                 if not (b in ('add', 'sub') and False): bad('immediate ALU op only into a register')
             if b == 'eor' and k[0] not in ('d', 'imm'): bad('eor source must be Dn')
             if b == 'eor' and k[0] == 'imm' and k[1] != 'd': bad('eori only into Dn')
-            if b in ('neg', 'not', 'ext', 'swap') and k[0] != 'd': bad('%s only on Dn' % b)
+            if b in ('neg', 'not', 'ext', 'swap', 'ff1') and k[0] != 'd': bad('%s only on Dn' % b)
             if b in ('muls', 'mulu', 'divs', 'divu', 'rems', 'remu'):
                 if sz == 'l' and k[0] not in ('d', 'ind', 'post', 'pre', 'd16'): bad('mul/div.l source: Dn,(An),(An)+,-(An),d16(An)')
                 if sz == 'w' and k[0] in ('idx', 'abs', 'pcrel'): bad('mul/div.w source mode')
@@ -346,6 +346,9 @@ class CPU:
             r = ~g(ops[0], sz) & MASK[sz]; self.nz(r, sz); self.V = self.C = 0; p(ops[0], sz, r)
         elif b == 'clr':
             p(ops[0], sz, 0); self.N = 0; self.Z = 1; self.V = self.C = 0
+        elif b == 'ff1':                                  # ISA_C (MCF54455): the leading zeros, 32 for 0
+            r = self.reg(ops[0])[1]; v = self.d[r]; n = 32 - v.bit_length()
+            self.d[r] = n; self.nz(v, 'l'); self.V = self.C = 0   # CFPRM: N and Z from the SOURCE
         elif b == 'swap':
             r = self.reg(ops[0])[1]; v = self.d[r]; v = ((v << 16) | (v >> 16)) & M32; self.d[r] = v; self.nz(v, 'l'); self.V = self.C = 0
         elif b == 'ext':

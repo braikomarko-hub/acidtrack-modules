@@ -4,8 +4,8 @@ and the Pro Co RAT (1978), with the Turbo RAT's LEDs as a third MODE.
 MODE 0, OFF (v8, the default), runs nothing: the frames pass untouched, so
 DISTORX can go on a track live and a pedal be faded in.
 
-MODE 1, SD-1, is SUPER OD's circuit and constants (modules/superod, the 1981
-service notes), at the sample rate since v8 (SUPER OD runs it at 2x).
+MODE 1, SD-1, is the BOSS circuit from the 1981 service notes' part values, at
+the sample rate since v8 (2x until then).
 
 MODE 2, RAT, and MODE 3, TURBO, are the RAT circuit as ElectroSmash's
 analysis gives it (parts list and schematic), modelled from its part values:
@@ -26,7 +26,7 @@ analysis gives it (parts list and schematic), modelled from its part values:
 RAT and TURBO differ only in the diodes: 1N914 (the SD-1's 1N4148 model) or
 red LEDs (the LTspice LedRed model).
 
-Page 1: LEVL TONE DRIV IN MIX, where SUPER OD has them, and MODE on the
+Page 1: LEVL TONE DRIV IN MIX, and MODE on the
 sixth knob. TONE is FILTER on the RAT, turned round so that right is bright
 in every mode.
 """
@@ -46,7 +46,7 @@ def _q(v):
 
 
 # =============================================================================
-# MODE 1: the SD-1 -- modules/superod/manifest.py's constants (v8: run at 1x)
+# MODE 1: the SD-1 -- the service notes' part values (v8: run at 1x)
 # =============================================================================
 # ---- parts (the service notes) --------------------------------------------
 R1, C1, R2 = 10e3, 47e-9, 470e3
@@ -301,8 +301,7 @@ RCONST = {
     "RRG": R6P * G8X / 2, "RSC8": R6P / RC8, "RSC9": R6P / R89,
 }
 
-# The SD-1's TONE polynomials as a table the decode loops over (SUPER OD has
-# them as immediates): B0 B1 B2 A1 A2 A0, each (P2, P1, P0), /8.
+# The SD-1's TONE polynomials as a table the decode loops over: B0 B1 B2 A1 A2 A0, each (P2, P1, P0), /8.
 TP = tuple(_q(CONST[f"T{_n}P{_k}"]) for _n in ("B0", "B1", "B2", "A1", "A2", "A0")
            for _k in (2, 1, 0))
 
@@ -316,7 +315,8 @@ PTABLE = WF + LN + EXP + TAPER + TP + OM + MK
 
 CONSTQ = {k: _q(v) for k, v in {**CONST, **RCONST}.items()}
 CONSTQ.update(WF_AT=WF_AT, LN_AT=LN_AT, EXP_AT=EXP_AT, TAP_AT=TAP_AT, TP_AT=TP_AT, OM_AT=OM_AT,
-              MK_AT=MK_AT, MK_AT6=MK_AT + 6, OMB=OM_AT + 7 * 16)
+              MK_AT=MK_AT, MK_AT6=MK_AT + 6, OMB=OM_AT + 7 * 16,
+              OMB16=OM_AT + 7 * 16 - 16)   # OMB16: the RAT loop's lookup runs 16 high (the 2m form)
 
 _P = Formatter.PLAIN
 _B = Formatter.BIPOLAR
@@ -328,12 +328,13 @@ MODULE = Module(
     kind=Kind.DSP_EFFECT,
     category=Category.TRACK, author="MaMarko", author_url="https://github.com/braikomarko-hub",
     proof=Proof.HARDWARE,
-    proof_note="v9 on the owner's MK1, image ACIDV71 (BUILD 88, remix acidtrack), 20 Oct 2026: five DISTORX at once "
-               "(T1 kick SD-1, T3 hats RAT, T5 OCTA303 SD-1, T6 TURB, with dEVILish), no clicks, no slow-downs, by ear. "
-               "v7 (ACIDV68..ACIDV70) had junk blocks on T1 under load; v9 is lighter (289 vs 381 cycles/sample)",
+    proof_note="the owner's MKI, image DTXPR3 (BUILD 96, remix distorx, on 0x05), 22 Oct 2026: DISTORX on T1 for more "
+               "than four minutes with four DISTORX at once on both cores (T1 and T2 kicks with DISTORX, T3 hats and T4 claps dry, T5 COMB FILTER + DISTORX, T6 COMB FILTER + DARK REV, T7 COMB FILTER + DISTORX, T8 MASTER), MODE changed while playing, OFF on "
+               "re-selection, no clicks, by ear. Before, on 0x0a, image DTXPR1 (21 Oct): every knob in every MODE, "
+               "FX1 and FX2, an LFO, a scene, save and reload. v10's loops and the move to id 0x1b (28 Oct) are not flashed",
     doc="SD-1 + RAT + Turbo RAT in one insert: MODE picks the pedal (OFF first), a 3 ms fade between them.",
     menu=MenuEntry(
-        fx2_id=0x0a,                  # the one free id (Oct 2026); was SUPER OD's 0x1b, now JamCones' BBD
+        fx2_id=0x1b,                  # a free id (README "FX id"); stock SPATIALIZER keeps 0x05
         donor_desc=0x400d58b8,        # DARK REV: 12 active slots
         abbr=b"DTX",
         fullname=b"DISTORX",
@@ -341,18 +342,18 @@ MODULE = Module(
     ),
     params=(
         Param(b"LEVL", 64, 128, active=True, formatter=_P,
-              doc="LEVEL: 64 ~ the input's loudness at DRIV 64, in every MODE"),
+              doc="output level; 64 matches the input's loudness at DRIV 64, in every MODE"),
         Param(b"TONE", 64, 128, active=True, formatter=_P,
-              doc="SD-1 TONE / RAT FILTER: 0 dark .. 127 bright, in every MODE"),
+              doc="SD-1 TONE or RAT FILTER: 0 dark to 127 bright, in every MODE"),
         Param(b"DRIV", 64, 128, active=True, formatter=_P,
-              doc="SD-1 DRIVE (18..47 dB) / RAT DISTORTION (0..67 dB, the 100k-A pot)"),
+              doc="SD-1 drive (18 to 47 dB) or RAT distortion (0 to 67 dB)"),
         Param(b"IN", 64, 128, active=True, formatter=_B,
-              doc="how hard the track hits the pedal: -12 .. +12 dB, 0 dBFS = 1 V"),
+              doc="how hard the track hits the pedal: -12 to +12 dB"),
         Param(b"MIX", 127, 128, active=True, formatter=_P,
-              doc="dry/wet; 127 = the pedal alone, 0 = exact passthrough"),
+              doc="dry/wet; 127 is the pedal alone, 0 is exact passthrough"),
         Param(b"MODE", 0, 4, active=True, formatter=Formatter.STEPPED,
               labels=("OFF", "SD-1", "RAT", "TURB"),
-              doc="the pedal: OFF (nothing runs), SD-1 (BOSS), RAT (Pro Co, 1N914), TURB (Turbo RAT, LEDs)"),
+              doc="the pedal: OFF (nothing runs), SD-1 (BOSS), RAT (Pro Co), TURB (Turbo RAT)"),
         # ---- page 2: empty (v9: PAD removed, README "v9") --
         _BLANK, _BLANK, _BLANK, _BLANK, _BLANK, _BLANK,
     ),
@@ -367,5 +368,7 @@ MODULE = Module(
     ),
     harness=Harness(layout_char=None, is_server=False),
     gates=(Gate("tools/verify/verify_distorx.py", remix_arg=False),),
-    dear={"LEVL": 127, "TONE": 127, "DRIV": 127, "IN": 127, "MIX": 127, "MODE": 2},
+    conflicts=(("SHATTER", "both are per-track dirt inserts (drive, clip): one in a remix"),),
+    # MIX 126, not 127: v10's settled loop (MIX 127) is cheaper than the calm blend below it
+    dear={"LEVL": 127, "TONE": 127, "DRIV": 127, "IN": 127, "MIX": 126, "MODE": 2},
 )

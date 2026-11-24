@@ -1,6 +1,6 @@
 """DISTORX references.
 
-1. `SD1` -- SUPER OD's float circuit (modules/superod/superod_ref.py), and
+1. `SD1` -- the SD-1's float circuit, and
    `RATCircuit` -- the RAT's, in floating point, at any sample rate: the
    float references the module is MEASURED against (run at 8x and
    band-limited back, the ground truth for aliasing). Diode laws exact
@@ -12,7 +12,7 @@
    accumulator truncates a0 and limits, clb/normf and div as measured on the
    emulator). The gate requires the assembled code to match it BIT FOR BIT;
    the arithmetic is then judged against (1). With MODE on SD-1 it is
-   SUPER OD's model, the MODE fade the one addition.
+   the SD-1's model, the MODE fade the one addition.
 
 All take/return the OT's digital level (1.0 = 0 dBFS = 1 V at the jack).
 """
@@ -720,7 +720,7 @@ def _rat_sample(X, F, Lq, Rq, outL, outR, i):
 
 
 def _sd1_sample(S, st, F, Lq, Rq, outL, outR, i):
-    """SUPER OD's per-sample code (superod_ref.fixed), the MIX through the fade"""
+    """The SD-1's per-sample code, the MIX through the fade"""
     A = acc(Lq[i]) + acc(Rq[i])
     A >>= 1
     vin = lim(mpy(lim(A), st["Gi"]))

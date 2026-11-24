@@ -15,13 +15,20 @@ Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikoma
 
 **MODE starts at OFF** (v8): nothing runs and the frames pass untouched, so
 DISTORX can be put on a track in the middle of a set and a pedal faded in
-when wanted. **MODE SD-1 is SUPER OD's circuit** — the same constants from
-the 1981 service notes, the same arithmetic — run at the sample rate since
-v8 (SUPER OD runs the clipper at 2×). FX id `0x0a`, the one id free in
-octabam on 20 Oct 2026; until then DISTORX sat on SUPER OD's `0x1b` (BBD's
-now), so a part saved with the old id needs DISTORX chosen again. A part
-saved before v8 reads its MODE one step lower: SD-1 → OFF, RAT → SD-1,
-TURB → RAT.
+when wanted.
+
+**FX id `0x1b`** (28 Oct 2026): a free id; stock SPATIALIZER keeps `0x05`. From
+22 Oct to 28 Oct 2026 DISTORX held `0x05` with `replaces="SPATIALIZER"` (image
+DTXPR3), and before that `0x1b` (until 20 Oct) and `0x0a` (DTXPR1, 21 Oct). A
+part saved on one of those ids needs DISTORX chosen again. A part saved before v8
+reads its MODE one step lower: SD-1 → OFF, RAT → SD-1, TURB → RAT.
+
+**Beside the other drives in octabam:** CHARACTER's SAT (TAPE / TUBE / INFL,
+JClones' models) is a saturation stage inside an FX1 station; SHATTER is a
+crush insert (fold, clip, bit and rate crush, feedback). DISTORX is two
+specific pedals modelled from their part values, with their tone controls,
+as one FX1/FX2 insert. It declares SHATTER a conflict: both are per-track
+dirt inserts, one is enough in a remix.
 
 ## Knobs
 
@@ -34,18 +41,20 @@ TURB → RAT.
 | 1 | 4 | MIX | 0–127, default 127 | dry/wet: 127 is the pedal alone, 0 an exact passthrough |
 | 1 | 5 | MODE | OFF / SD-1 / RAT / TURB | OFF (default: nothing runs) or the pedal (a value past TURB, as an LFO can send, reads as TURB) |
 
-Slots 0–4 are SUPER OD's.
-
 ## The SD-1 (MODE 1)
 
-SUPER OD's README is the whole story: the input couplings, the clipping
-stage with DRIVE and the asymmetric 1S2473 diodes in its feedback (the diode
-law solved exactly, at 2×), the TONE stage by nodal analysis, the output
-coupling and LEVEL. Shared callees replace some of its straight-line
-per-block code (the knob stretch, the LN lookup, the TONE polynomials as a
-loop over a P table, the halfbands); the arithmetic is word for word the
-same. Until v8 the gate held the output to SUPER OD's model bit for bit;
-since v8 the clipper runs at 1× ("v8" below).
+From the BOSS service notes' parts list (the constants are in
+`manifest.py`, computed from the part values):
+
+| stage | parts | as computed |
+|---|---|---|
+| input couplings | C1 47 n, R2 470 k; C2 18 n, R4 100 k | HP 7.2 Hz; HP 88 Hz into IC1a |
+| clipping stage | DRIVE VR1 1 M (B) + R5 33 k, the gain leg R6 4.7 k + C3 47 n; the 1S2473 diodes in the feedback, one on the negative side and two in series on the positive | the non-inverting gain (18–47 dB with DRIVE) with the 720 Hz leg; the diode law solved exactly (Wright omega, tabulated), so the clip is asymmetric, as on the pedal; the op-amp's swing ±3.3 V |
+| TONE stage | VR3 20 k ("W"), R7 10 k, C4 18 n, C5 27 n, R8 470 Ω, R9 10 k, C6 10 n | the stage by nodal analysis; its coefficients as quadratics in the knob (a P table the decode loops over) |
+| output | C7 1 µ, R10 4.7 k, LEVEL VR2 10 k (B) | HP 10.8 Hz into LEVEL, +3 dB of make-up |
+
+Until v8 the clipper ran at 2× through 11-tap halfbands; since v8 it runs
+at 1× ("v8" below).
 
 ## The RAT (MODES 2 and 3)
 
@@ -61,8 +70,8 @@ Analysis*:
 | output | the JFET (unity), C10 1 µ into VOLUME 100 k | HP 1.6 Hz, at 1×, a 48-bit state; then LEVEL × the make-up |
 
 The LM308 stage and the clipper node run at 1×, one straight-line callee
-called once a sample. (Until 15 Oct 2026 they ran at 2× through SUPER OD's
-11-tap halfbands; on the MK1 that cost too much on core 1, "On the unit".
+called once a sample. (Until 15 Oct 2026 they ran at 2× through 11-tap
+halfbands; on the MK1 that cost too much on core 1, "On the unit".
 The owner A/B'd the two by ear, "almost imperceptible", and chose 1×.) At
 1× the integrator's W is ~114 and the slew ~6.8 V a sample: W is applied as
 W/128 with one more shift, and the slew compares the step at volts/8.
@@ -127,10 +136,8 @@ call), 14 Oct 2026, every gate of `tools/verify/verify_distorx.py`:
   knob at both ends, a full-scale square, a split block, page words with
   bits 8–15 dirty (an LFO's), MODE changed mid-render (SD-1, RAT, TURB, back,
   a 3-block RAT, with a split), MODE values past TURB.
-- **SD-1 = SUPER OD**: 0 LSB against SUPER OD's own model after the
-  128-sample fade-in, on an acid line, a square and noise; the service
-  notes' WAVEFORM CHECKING page as SUPER OD measured it (1.21 / 1.22 / 0.74
-  Vp-p against 1.2 / 1.2 / 0.8).
+- **The service notes' WAVEFORM CHECKING page** (SD-1): 1.21 / 1.22 /
+  0.74 Vp-p against 1.2 / 1.2 / 0.8.
 - **The analysis** (the float circuit's LM308 stage): 65.0 dB at 700 Hz at
   full DISTORTION (~64 dB near 700 Hz); 24.8 dB at 1.5 kHz and 8.2 dB at
   60 Hz with 1 k (24 and 8).
@@ -145,27 +152,31 @@ call), 14 Oct 2026, every gate of `tools/verify/verify_distorx.py`:
   slew clamp in float), −64 dB at the defaults, −43 dB at full DISTORTION,
   −78 dB at DISTORTION 0, −49 … −64 dB elsewhere; against the circuit run at
   8× and band-limited back (the ground truth), −49 dB (RAT), −53 dB (TURBO),
-  −42 dB at full DISTORTION (SUPER OD: −31 … −44; the 2× core was −40 … −56).
+  −42 dB at full DISTORTION (the 2× core was −40 … −56).
   On an acid line with FILTER bright: −35 … −41 dB at 1×, −43 … −48 at 2×.
 - **MIX 0** is an exact passthrough in every MODE with every other knob at
   an extreme.
 - **The fade**: switching SD-1 → RAT → TURB → SD-1 on a 110 Hz tone makes no
   step larger than the pedals' own (0.0995 FS against 0.0993).
 - **Cost**: 1,071 words of code + 515 words of table (WF 241, LN 65, EXP 33,
-  TAPER 33, TP 18, OM 113, MK 12) = 1,586 words; SUPER OD was 919.
+  TAPER 33, TP 18, OM 113, MK 12) = 1,586 words.
   Instructions a block in the harness (decode, loop and fade, no stall):
   SD-1 5,480, RAT/TURBO 4,537 (8,505 with the 2× core). By
-  `tools/build/cycle_count.py`: the SD-1 loop 381 cycles a sample (SUPER OD
-  345: the shared callees' calls, the fade and the nop at LA).
+  `tools/build/cycle_count.py`: the SD-1 loop 381 cycles a sample (v7; v9: 225,
+  "v9" below).
 
 ## Where it goes
 
-1,586 words is one code stream, so it needs ONE harvested run that long.
+Since v10 (below) DISTORX is 1,629 words: 1,114 of code and the 515-word P
+table, still one code stream, so it needs ONE harvested run that long.
+(The 1,586 of v7 and the 1,548 of v9 are in "Measured" and "v9".)
 CHORUS + PLATE REV + SPRING REV is 1,743 words up to the 35 SPRING REV words
 DARK REV still calls (P:0x01586), which cut the run there: DISTORX fits with
-157 to spare. A remix that keeps DARK REV and also places another module
-of more than 157 words gives up a second, separate run for it. aCiDtRacK
-gives up PHASER: its 207 words join EQUALIZER's 282 (dB666 is on
+114 to spare (v9: 195). A remix that keeps DARK REV and also places another
+module of more than 114 words gives up a second, separate run for it.
+`make check REMIX=distorx` is what places it; v10's size was counted from
+the assembled file, not placed (no stock image where it was written).
+aCiDtRacK gives up PHASER: its 207 words join EQUALIZER's 282 (dB666 is on
 EQUALIZER's id) into 489, where dB666 (297 + 66 words) goes.
 
 ## On the unit
@@ -197,8 +208,7 @@ EQUALIZER's id) into 489, where dB666 (297 + 66 words) goes.
   first block core 1's ColdFire pull reads (`docs/firmware/DSP.md` "Frames,
   tempo, read-back"); the dispatcher's copy of the block right after
   DISTORX's rts lands inside that pull when DISTORX ends in its window,
-  which moves with the machine's work and the sequencer. SUPER OD
-  (shorter) ended before it.
+  which moves with the machine's work and the sequencer.
 - **Measured cost in the harness** (instructions a block, no stall):
   SD-1 5,480, RAT/TURBO 8,505 (the 2× core).
 - **Workaround (image ACIDDTX3): PAD**, page 2, slot 6: wait PAD x 256
@@ -222,7 +232,7 @@ EQUALIZER's id) into 489, where dB666 (297 + 66 words) goes.
 ## v8 (18 Oct 2026): lighter, for T1
 
 T1's junk blocks ("On the unit") come when DISTORX ends late in core 1's
-frame; SUPER OD, shorter, never made them. v8 makes every MODE end earlier
+frame. v8 makes every MODE end earlier
 and adds OFF. Instructions per 16-sample block in `dsp_host` (the owner's
 audition dump with v8's code in it, an acid line, the default knobs):
 
@@ -238,7 +248,7 @@ What changed:
   the frames, processed in place, pass untouched. Leaving a pedal for OFF
   fades it out (2.9 ms) and then stops; leaving OFF for a pedal switches it
   in from rest and fades it in (2.9 ms), as any MODE change.
-- **The SD-1 at 1×.** The clipper ran at 2× through SUPER OD's 11-tap
+- **The SD-1 at 1×.** The clipper ran at 2× through 11-tap
   halfbands, with vp delayed 5 samples to match them; now vf = F(h) and
   o1 = clamp(vp + vf) at the sample rate. Against the circuit at 8×,
   band-limited (an acid line): −39.7 dB at the defaults (2×: −41.5),
@@ -286,25 +296,93 @@ What changed:
   slow-downs (by ear; no recording of this session).
 - A part saved with PAD keeps a byte in slot 6 that nothing reads.
 
+**On the unit (DTXPR1, the final tree of this module's PR, remix `distorx`, BUILD 91, the owner's
+MKI, 21 Oct 2026):** the project opens; T1 (kick) FX2 = DISTORX at MODE OFF leaves the sound as it
+was; SD-1 → RAT → TURB while playing, no click; LEVL, TONE, DRIV and IN each act in each pedal;
+MIX 0 is the dry sound; on FX1 of another track (T3, hats) as well; four at once (T1, T3, T5, T6,
+both cores) for five minutes: no clicks, no noise, no slow-down; an LFO on DRIV or TONE moves the
+sound, no hang; a scene with another MODE through the crossfader, no click; save, power-cycle,
+reload: DISTORX and its knobs are kept. By ear, no recording.
+
+**On the unit (DTXPR3, on `0x05`, the final tree, BUILD 96, the owner's MKI, 22 Oct 2026):** the
+T1 run asked for in review: DISTORX on T1 (a kick) for more than four minutes, with the load
+T1 and T2 kicks with DISTORX, T3 hats and T4 claps dry, T5 COMB FILTER + DISTORX, T6 COMB FILTER + DARK REV, T7 COMB FILTER + DISTORX, T8 MASTER: four DISTORX at once over both cores. No clicks, no junk blocks, by ear (no USB module in this
+remix, so no recording). MODE changed through SD-1, RAT and TURB all along; taken off and chosen
+again, it starts at OFF.
+
+## v10 (28 Oct 2026): settled and calm loops, a leaner stage
+
+**Not yet on a unit.** Everything below is a static word count and a bit-exact
+render in the emulator; the one hardware figure is v9's (`docs/contributing/COSTS.md`:
+9.45 % of core 0 at the dearest, over the 9.07 % that core 0 allows).
+
+The cost was the MODE fade, run on every sample. `dtx_out` computes
+MIX x (1 + d), steps d and clamps it, then blends; at d = 0 (the fade is over)
+it hands back MIX exactly, and with MIX 127 the settled block's `tne` throws the
+whole blend away for the wet. v10 stops computing what a settled block does not
+use:
+
+- **Per block, a calm flag** (`$2f`): d = 0 and the step up, so d stays 0
+  through the block (the test the settled flag `$30` already made, without MIX).
+  Settled (`$30`) is calm with MIX 127.
+- **Three loops per pedal**, one straight-line `stage` routine each (`sod_stage`,
+  `dtx_rstage`: the input to the wet in y0, the clipper's callee inlined):
+  *settled* writes the wet to both channels; *calm* is `dtx_out`'s blend with
+  MIX x (1 + d) = MIX, d untouched; *fading* is v9's `dtx_out`, unchanged.
+  The output is bit for bit v9's in all three.
+- **The RAT stage, bit for bit** (the model is untouched): the diode law's table
+  offset in r4 once a block and the segment index without the 2 (m - 1/2)
+  subtraction (`lsl`/`lsr` for the fraction, read from `a1` because A2 is stale
+  there); three of the stage's constants in n1, n2, n4 (a word a use instead of
+  two); the sign select as `tpl`; vp into y0; the HP stages' constant in y0 so
+  `mac x1,y0` skips a copy (the signed form: `x1,y1` assembles as `macsu`,
+  TRAPS "The assembler mis-encodes"); v- and v kept in b; vo1 in x1 (`y1,x1`,
+  signed); the C7 update after the vX sum and the vX terms ordered so x0 already
+  holds vh8.
+
+`make cycles REMIX=distorx` reads 267 for the module now (the RAT's fading loop, the worst of the six; v9: 289).
+Static cycles a sample (this note's counter, the same method: the loop body plus each callee
+plus 4 a call; v9 read 289 and 225 there, this counter 291 and 227, and the
+deltas are what is quoted):
+
+| | v9 | settled (MIX 127) | calm (MIX below 127) | fading |
+|---|---|---|---|---|
+| SD-1 | 227 | 181 | 198 | 226 |
+| RAT / TURBO | 291 | 223 | 240 | 268 |
+
+v9's 9.45 % was 289 static cycles at 1.48 measured over static. That ratio, if
+it holds, puts the RAT at about 7.2 % settled and 7.8 % calm, under the 9.07 %.
+It is an inference from one ratio; the unit decides. **`dear` now sets MIX 126**,
+the calm blend, which is the dearest state that lasts: the settled loop is
+cheaper than the calm one, and the fade lasts 2.9 ms a MODE change. An LFO on
+MODE that keeps the fade running prices at the fading column.
+
+Bit-exactness and the circuit gates: `verify_distorx`'s render gates run
+against the same model unchanged (every case 0 LSB); they were run here
+through a standalone driver on the emulator library, with garbage in the
+r7 block and every scratch register before each call, because the 1.40C was not
+at hand. CI's reach job runs the real ones. New instruction forms against
+v9: `lsl #n,a` (the load meter runs `lsr #n,a`), `tpl`, `mac -y0,x0,a`,
+`mac x1,y0,a`, `mac y1,x1,a`, `mpy y1,x1,a`, `move a,b`; `verify_distorx` lists
+the ones with no stock site. n1, n2 and n4 are clobbered across `proc`, as BBD's
+n4 and the reverb server's n1 and n4 already are.
+
 ## Open
+
+- v10 has not been flashed. To count: the image, then `COST-B`'s read with `dear` (MIX 126), the settled
+  state (MIX 127) and a MODE change under load; T1 for a few minutes, since the fix for v7's T1 junk
+  was ending earlier in the block and v10 ends earlier still.
 
 - The `-pword` (dirty LFO word) renders of `verify_distorx`: skipped on the owner's tree, whose
   `dsp_host` lacks the option. `make check REMIX=acidtrack` otherwise passes there (20 Oct 2026).
-- Instruction forms: DISTORX uses SUPER OD's and dB666's (both on the
-  MK1) and CHARACTER's `bne`, `beq` and `do #n` (Sam's MKII), outside the
-  sample loops. New beside those, all plain register moves: `move rN,x0`
-  and `move nN,x0` for the four limits the RAT loop keeps in r1, r2, r3
-  and n3 (r1 and r2 the dispatcher reloads after proc; r3 and n3 SUPER
-  OD's own), `move #>imm,n3`, `move x0,y0`, `move y0,x:(r7+d)` and
-  `move p:(r5)+,x0`. `verify_distorx` lists any form with no stock site:
-  watch those on the first flash.
-- The knobs DRIV/TONE/LEVL are applied once per block, like SUPER OD's.
+- Instruction forms: every form DISTORX uses has run on the owner's MK1 since v7 (ACIDV68 to
+  ACIDV71, DTXPR1); `verify_distorx` lists the ones with no site in the stock payloads.
+- The knobs DRIV/TONE/LEVL are applied once per block.
 
 ## Gates
 
 `tools/verify/verify_distorx.py` (the manifest's): generated source,
-bit-exact against the model (19 renders), SD-1 = SUPER OD (when
-`modules/superod` is in the tree), MIX 0, the service notes, the analysis,
+bit-exact against the model (19 renders), MIX 0, the service notes, the analysis,
 the circuit and its 8× truth, silence, the fade, every knob in every MODE;
 and an information list of instruction forms with no stock precedent.
 
@@ -320,7 +398,7 @@ and an information list of instruction forms with no stock precedent.
 
 ## Sources
 
-- BOSS SD-1 service notes, ET5212-510A, 3 Mar 1981 (SUPER OD's).
+- BOSS SD-1 service notes, ET5212-510A, 3 Mar 1981: part values only.
 - ElectroSmash, *Pro Co Rat Analysis* (the schematic, the parts list, the
   clipping amplifier's response, the LM308's slew rate):
   <https://www.electrosmash.com/proco-rat>.

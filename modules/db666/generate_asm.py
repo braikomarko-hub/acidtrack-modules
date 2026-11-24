@@ -31,8 +31,8 @@ def render():
     m = manifest()
     vals = dict(m.CONSTQ)
     src = (HERE / "db666.tmpl.asm").read_text()
-    # @COREBASE@ / @SBASE@ stay: the build substitutes them per payload
-    keep = {"COREBASE", "SBASE"}
+    # @ROFF@ stays: the build substitutes it per payload
+    keep = {"ROFF"}
 
     def sub(mt):
         k = mt.group(1)

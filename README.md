@@ -1,88 +1,93 @@
 # aCiDtRacK modules for octabam
 
-Acid on the Elektron Octatrack MKI: a TB-303 voice, the Devil Fish mods and a distortion
-pedal, as modules for [octabam](https://github.com/sambanks/octabam), Sam Banks' remixer for
-the Octatrack's OS 1.40C.
+Acid on the Elektron Octatrack MKI: a TB-303 voice, the Devil Fish mods, pedals, compressors, a
+granular delay, a drone machine and a scene morph, as modules for
+[octabam](https://github.com/sambanks/octabam), Sam Banks' remixer for the Octatrack's OS 1.40C.
 
-| module | kind | what it is | proven |
-|---|---|---|---|
-| [`octa303`](modules/octa303/README.md) | ColdFire | **OCTA-303**: a circuit-modelled TB-303 voice, one per track, as a machine of its own (FUNC + SRC → OCTA-303). Calibrated against Din Sync's recordings of a real TB-303. Runs on the ColdFire, so it leaves the DSP to the effects (unlike Zac Kyoti's DSP-based BLACKPYRAMIDS_303, see its README). | the author's MKI |
-| [`devilish`](modules/devilish/README.md) | DSP FX (with `octa303`) | **dEVILish**: Robin Whittle's Devil Fish modifications for OCTA-303 tracks (filter FM, MUFF, sweep, slide, accent) | the author's MKI |
-| [`distorx`](modules/distorx/README.md) | DSP insert | **DISTORX**: BOSS SD-1, Pro Co RAT and Turbo RAT in one insert, MODE picks the pedal | the author's MKI |
-| [`db666`](modules/db666/README.md) | DSP insert + side-chain bus | **dB666** (decibels and the Devil; formerly DBX 160): a model of the dbx 160 compressor (1976) from its schematic, true-RMS detector, ratio to infinity and beyond, KEY from any track over a one-word-per-track bus | the author's MKI |
+This repository is the **showcase**: every module the author has made, in one place, with its
+status. The folders below hold the versions in the author's newest images (24 Nov 2026). Several
+modules are also part of octabam itself; there, octabam's copy is the one to build with.
 
-The [`acidtrack`](remixes/acidtrack/README.md) remix puts them all together (with USB AUDIO OUT
-on MASTER and DARK REV as the one reverb): the author's live set.
+Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)): the
+ideas, the listening and the tests on the unit. **The code was written by Claude (Anthropic)**:
+engines, calibration, integration and gates. Each module's README separates what was measured
+from what is inferred.
 
-## Status
+## The modules
 
-These modules are **not (yet) part of octabam**. A pull request to
-[sambanks/octabam](https://github.com/sambanks/octabam) is planned; until it is merged, this
-repository is where they live. The same files are on the branch
-[`acidtrack-modules`](https://github.com/braikomarko-hub/octabam/tree/acidtrack-modules) of
-the author's octabam fork.
+| module | kind | what it is | in octabam | on the unit |
+|---|---|---|---|---|
+| [OCTA303](modules/octa303/README.md) | ColdFire machine | **OCTA-303**: a circuit-modelled TB-303 voice, one per track, a machine of its own (FUNC + SRC → OCTA-303), calibrated against Din Sync's recordings of a real TB-303 | ✅ [`octa303`](https://github.com/sambanks/octabam/tree/main/modules/octa303) (an older version than this folder's) | ✅ |
+| [OCTA303 SEAM](modules/octa303-seam/README.md) | hybrid (ColdFire + DSP) | the hybrid OCTA-303: the ColdFire keeps the knobs, the envelopes and the VCO; the DSP renders the filter, the VCA and the output at the track's source seam | — | ✅ image ACIDV97 (20 Nov 2026) |
+| [dEVILish](modules/devilish/README.md) | DSP FX, with OCTA303 | Robin Whittle's Devil Fish modifications for OCTA-303 tracks: filter FM, MUFF, sweep, slide, accent | ✅ [`devilish`](https://github.com/sambanks/octabam/tree/main/modules/devilish) | ✅ |
+| [DISTORX](modules/distorx/README.md) | DSP insert | BOSS SD-1, Pro Co RAT and Turbo RAT in one insert; MODE picks the pedal | ✅ [`distorx`](https://github.com/sambanks/octabam/tree/main/modules/distorx) | ✅ near-daily use |
+| [dB666](modules/db666/README.md) | DSP insert + side-chain bus | a model of the dbx 160 compressor (1976) from its schematic, KEY from any track | ✅ as [`vca160`](https://github.com/sambanks/octabam/tree/main/modules/vca160) (VCA160, KEY over KEYBUS) | ✅ |
+| [FET76](modules/fet76/README.md) | DSP insert | a model of the UREI 1176LN FET limiter (1967) from its manual, for the master | ✅ [`fet76`](https://github.com/sambanks/octabam/tree/main/modules/fet76) | ✅ |
+| [AtoMizer](modules/atomizer/README.md) | DSP FX2 | a granular delay after the Red Panda Particle (re-derived from its manual) | — | ✅ ACIDV79 (27 Oct 2026); out of the newest remix |
+| [MORPH](modules/morph/README.md) | ColdFire | a track's scene morph played by itself, at the tempo; v1.2 adds the way back (RET, CURV, END: risers that come back "as if by hand") | ✅ v1 [`morph`](https://github.com/sambanks/octabam/tree/main/modules/morph); v1.1 + v1.2 proposed | v1.1 ✅; v1.2 not yet |
+| [STROJ](modules/stroj/README.md) | ColdFire machine | a drone machine: four plates with cross phase modulation (after SOMA's Lyra-8) and two sub-octaves (after Moog's Subharmonicon) | — | not yet (emulator only) |
 
-Tested on one Octatrack MKI, OS 1.40C (October 2026): hours of playing with two or three
-OCTA-303 tracks, dEVILish and DISTORX, image `ACIDV71`, dB666 (as DBX 160) since 11 Oct 2026. **Use at your own risk** and keep your
-stock OS image and a way back (the Startup Menu's OS upgrade over MIDI/USB).
+OCTA303 SEAM also needs OCTA303; dEVILish works on OCTA-303 tracks; MORPH needs octabam's STORE.
+
+## The remixes
+
+- [`acidhyb`](remixes/acidhyb/README.md): **the author's current live image** (ACIDV97, then
+  ACIDV98 with MORPH v1.2): aCiDtRacK with the hybrid OCTA-303.
+- [`acidtrack`](remixes/acidtrack/README.md): aCiDtRacK, the author's live set.
+- `remixes/test/…`: one module each, for its gates.
+
+## Shelved or elsewhere
+
+Made, tried, and set aside (or kept on their own branch of the author's octabam fork). They are
+not copied here; the links go to the branch where each one lives.
+
+| what | where | status |
+|---|---|---|
+| TRACK MENU (ACID BUCKET), v1 and v2 | [`trackmenu`](https://github.com/braikomarko-hub/octabam/tree/trackmenu), [`trackmenu-v2`](https://github.com/braikomarko-hub/octabam/tree/trackmenu-v2) | v2 tried on the unit, shelved (25 Oct 2026) |
+| ERGOSUM (a Cartesian sequencer) and EuKlé (Euclidean modes) | [`ergosum-v1`](https://github.com/braikomarko-hub/octabam/tree/ergosum-v1), inside `trackmenu-v2` | shelved (25 Oct 2026) |
+| BOOT_SMILE (an acid smiley at power-on) | [`trackmenu`](https://github.com/braikomarko-hub/octabam/tree/trackmenu) | made, kept for a final image |
+| MORPH LOCK page (recorded knob values as bars) | [`morph-lock`](https://github.com/braikomarko-hub/octabam/tree/morph-lock) | emulator only |
+| MORPH v2 | [`morph-v2`](https://github.com/braikomarko-hub/octabam/tree/morph-v2) | shelved (26 Oct 2026) |
+| vFable, a second OCTA303 engine (developed separately) | branches `octa303-fable-*` and `octa303_optimus*` of the fork | work in progress |
 
 ## Using them
 
 You need a working octabam checkout and your own stock 1.40C image (octabam's `README.md` and
-`docs/guide/` explain the setup). No Elektron byte is in this repository: the image is always
+`docs/guide/` explain the setup). **No Elektron byte is in this repository**: the image is always
 built from your own.
 
-1. Copy the folders of this repository into your octabam folder, keeping the paths
-   (`modules/…`, `tools/…`, `remixes/…`).
-2. Add the modules to a remix (`remixes/<name>/remix.py`, `modules=(…, 'OCTA303', 'DEVILISH',
-   'DISTORX')`), or try `remixes/test/octa303` (OCTA303 alone).
-3. `make docs`, then `make check REMIX=<name>`, then `make bus REMIX=<name>` and flash as
+1. For a module that is in octabam, use octabam's copy.
+2. For the others, copy the folders of this repository into your octabam folder, keeping the
+   paths (`modules/…`, `tools/…`, `remixes/…`). They were last built on the author's fork (branch
+   [`morph-v1.2`](https://github.com/braikomarko-hub/octabam/tree/morph-v1.2), on octabam of
+   mid-November 2026); a newer octabam may need small changes.
+3. `make docs`, then `make check REMIX=<name>`, then `make bus REMIX=<name>`, and flash as
    octabam describes.
 
-Notes for the octabam of 20 October 2026:
-
-- `octa303` cannot share an image with `analog-bassdrum`, `blackpyramids-303` or SYNTH MACHINE
-  (same seams); `db666` cannot share one with SIDECHAIN_COMPRESSOR (same hook and words) and
-  takes EQUALIZER's id.
-- FX ids: `distorx` `0x0a`; `devilish` `0x10`, PHASER's, which it replaces on both menus (as
-  `db666` replaces EQUALIZER): since RESONATOR took `0x1e` (21 Oct 2026) every non-stock FX2 id
-  is a module's. octabam's `tools/remix/selftest.py` needs `"octa303": ()` and the acidtrack
-  line in its harvest table.
-- dEVILish was on `0x1f` before 20 Oct 2026 and on `0x1e` until 21 Oct; DISTORX was on `0x1b`
-  before 20 Oct: a part saved with an old id needs the effect chosen again on its tracks.
+Tested on one Octatrack MKI, OS 1.40C. **Use at your own risk**, and keep your stock OS image and
+a way back (the Startup Menu's OS upgrade).
 
 ## Credits and sources
 
-Author: MaMarko (Marko Brajković, [braikomarko-hub](https://github.com/braikomarko-hub)): the idea, the listening and the tests on the unit.
-**The code was written by Claude (Anthropic)**: engines, calibration, integration and gates.
-Each module's README separates what was measured from what is inferred.
-
 - **Sam Banks**, [octabam](https://github.com/sambanks/octabam) (MIT): the remixer, the build,
-  the emulator port and the gates these modules are checked with.
+  the emulator port and the gates these modules are checked with; STORE, HOOKS, KEYBUS.
 - **Tim Hastie**, SYNTH MACHINE in
   [octatrick-modules](https://github.com/timhastie/octatrick-modules) (MIT, © 2026 Tim
   Hastie): the FLEX renderer integration OCTA303 follows for one voice, and the semitone tuning.
-- **repeat98** (Jannik Aßfalg), [`analog-bassdrum`](https://github.com/repeat98) in octabam:
-  the measured machine-list seams the OCTA-303 row uses.
+- **repeat98** (Jannik Aßfalg), `analog-bassdrum` in octabam: the machine-list seams the
+  OCTA-303 row uses, and the source seam OCTA303 SEAM uses.
+- **Zac Kyoti**, [octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) (MIT):
+  SIDECHAIN_COMPRESSOR's dispatcher hook and shared-window words, which dB666's bus uses.
 - **Din Sync**, [TB-303 reference recordings for x0xb0x](http://www.dinsync.info/2010/02/tb-303-reference-recordings-for-x0xb0x.html):
   the calibration target.
-- **tinyloops**, [Programming the Roland TB-303](https://tinyloops.com/tb303/index.html):
-  example recordings for the resonance and the accent.
+- **tinyloops**, [Programming the Roland TB-303](https://tinyloops.com/tb303/index.html).
 - **Robin Whittle**, [Devil Fish](https://www.firstpr.com.au/rwi/dfish/) (Real World
-  Interfaces): the Devil Fish modifications and the TB-303 notes (gate length, accent and slide
-  RC values).
+  Interfaces): the Devil Fish modifications and the TB-303 notes.
 - **Tim Stinchcombe**, [TB-303 diode ladder analysis](https://www.timstinchcombe.co.uk/index.php?pge=diode2).
-- **dbx**, 160/161 manual and schematic, 160A cut sheet; **D. E. Blackmer**, US 3,681,618 (the
-  RMS detector).
-- **Zac Kyoti**, SIDECHAIN_COMPRESSOR in
-  [octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) (MIT): the dispatcher
-  hook site and the shared-window words dB666's bus uses, measured on an MKI.
-- **Roland**, TB-303 service notes; **BOSS**, SD-1 service notes; **Pro Co**, RAT schematics
-  (as documented by ElectroSmash's RAT analysis).
+- **dbx**, 160/161 manual and schematic; **D. E. Blackmer**, US 3,681,618.
+- **UREI / Universal Audio**, 1176LN manual.
+- **Red Panda**, Particle 2 owner's manual and changelog (no Red Panda code or firmware used).
+- **SOMA Laboratory** (Lyra-8) and **Moog** (Subharmonicon): the instruments STROJ is after.
+- **Roland**, TB-303 service notes; **BOSS**, SD-1 service notes; **Pro Co**, RAT schematics.
 
-TB-303, BOSS, SD-1, RAT, Devil Fish, dbx and Octatrack are trademarks of their owners; these
-modules are independent models and are not affiliated with or endorsed by them.
-
-## License
-
-MIT, © 2026 Marko Brajković (`LICENSE`).
+Each module's README has its own sources in full.

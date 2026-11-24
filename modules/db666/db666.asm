@@ -6,7 +6,8 @@
 ; manifest.py). Edit the template, then: python3 modules/db666/generate_asm.py
 ;
 ; Insert contract: frames in place at x:(r0)/x:(r0+n0), knobs from r6,
-; state in this instance's r7 block. Reads one word of the shared window.
+; state in this instance's r7 block. In the shared window it reads one LEVEL
+; word and, with KEY on, writes its heartbeat to that track's BEAT word.
 ;
 ; ---- the 160 (schematic + manual; modules/db666/README.md) -----------------
 ;   ms   = (L^2 + R^2)/2, or KEY's block mean square from the bus
@@ -23,7 +24,7 @@
 ; ---- r7 slots ---------------------------------------------------------------
 ; per block: $00 T/32  $01 k/2  $02 OUT bits/32  $03 OverEasy flag  $04 KEY flag
 ;   $05 KEY's mean square (the bus word)  $06 MIX
-; persistent, zeroed at init: $07 S high  $08 S low (48 bits)
+; persistent, zeroed at init: $07 S high  $08 S low (48 bits)  $0c KEY heartbeat
 ; per sample scratch: $09 the shift count  $0a wet L  $0b wet R
 ;
 ; Every mpy and mac is x0,y1 / -x0,y1 / x0,x0 (the signed encodings). Every
@@ -35,6 +36,7 @@ init:
         clr     a
         move    a,x:(r7+$07)            ; the detector, empty
         move    a,x:(r7+$08)
+        move    a,x:(r7+$0c)            ; the KEY heartbeat
         rts
 
 proc:
@@ -96,10 +98,11 @@ proc:
         move    #>$7fffff,x0
         teq     x0,a
         move    a,x:(r7+$06)
-; ---- KEY: OFF, or T1..T8 -> the bus word of that track ---------------------------
-; t = KEY - 1; the word is at $3bff8 + t (T1..T4, payload B's half) or
-; $33ff4 + t (T5..T8, payload A's half). A KEY of 0 or above 8 is OFF (a
-; Part saved with another effect here can hold any byte).
+; ---- KEY: OFF, or T1..T8 -> that track's record on the bus ------------------------
+; t = KEY - 1. Each track has a record of four words, BEAT COUNT LAST LEVEL,
+; at $3fff0 + 4t (T1..T4, payload B's half) or $37fe0 + 4t (T5..T8, payload
+; A's half). A KEY of 0 or above 8 is OFF (a Part saved with another effect
+; here can hold any byte).
         move    x:(r6+$3),a
         and     #>$7f0000,a
         asr     #$10,a,a                ; KEY 0..127
@@ -116,18 +119,37 @@ proc:
         move    b1,x:(r7+$04)
         move    x1,a
         sub     #>$1,a
-        and     #>$000007,a             ; t, 0..7 (when off, any word in the bus)
+        and     #>$000007,a             ; t, 0..7 (when off, any record)
         move    a1,x1                   ; a1 straight out: the and left a2 stale
         move    x1,a
         move    #>$000003,x0
         cmp     x0,a                    ; t - 3
-        move    #>$03bff8,b
-        move    #>$033ff4,y1
+        move    #>$03fff0,b
+        move    #>$037fe0,y1
         tgt     y1,b                    ; t >= 4: payload A's half
-        add     x1,b
+        asl     #2,a,a                  ; 4t
+        add     a,b                     ; b1 = the record: its BEAT word
         move    b1,r1
+; ---- KEY on: this dB666's heartbeat into the record's BEAT word ------------------
+; The tap sums a track only while its BEAT word keeps changing. BEAT has
+; one kind of writer, a dB666 whose KEY names the track (OFF branches over
+; the store); COUNT and LAST have one writer, that track's tap. No word is
+; read, changed and written back by two parties, so the two cores cannot
+; undo each other.
+        move    x:(r7+$0c),a            ; this dB666's heartbeat
+        add     #>$000001,a
+        move    a1,x:(r7+$0c)
+        move    a1,x0
+        move    x:(r7+$04),a            ; KEY on (1) or off (0)
+        tst     a
+        beq     dbk_off
+        move    x0,y:(r1)+              ; BEAT (stock's store form; r1 is set again below)
+dbk_off:
+        add     #>$000003,b             ; b1 = the record's LEVEL word
+        move    b1,r1
+        nop                             ; two moves between writing r1 and using it
         nop
-        move    y:(r1),x0               ; the bus word
+        move    y:(r1),x0               ; the level word
         move    x0,x:(r7+$05)
         move    #$1,n0                  ; (short immediate, stock's own form)
 ; ===========================================================================
@@ -297,25 +319,54 @@ dbc_end:
 ; ---------------------------------------------------------------------------
 ; dbt_tap -- the side-chain bus. Reached by a `jsr` at the dispatcher's FX1
 ; entry (SIDECHAIN_COMPRESSOR's `sctap` site), every track, every block, the
-; track's audio at X:$00..$1f. Writes the block's mean square, ONE word, at
-; this core's half: @SBASE@ + (track - @COREBASE@). Uses only a, r0, r1, n1,
-; x0 -- inside the set stock reloads after this site (a b r0 r1 n1 x0, as
-; audited for sctap) -- then replays the displaced instruction.
+; track's audio at X:$00..$1f. Keeps the track's record at this core's half
+; (@ROFF@: the half's first record less four words for each track before
+; it): reads BEAT, writes COUNT, LAST and LEVEL (the block's mean square).
+; Uses only a, b, r0, r1, x0 -- inside the set stock reloads after this site
+; (a b r0 r1 n1 x0, as audited for sctap) -- and replays the displaced
+; instruction after the address arithmetic. It sums the block only while a
+; dB666 keys the track (its BEAT word changed within the last WANT_BLOCKS
+; blocks); asleep it costs about 30 cycles and writes 0. It leaves r0 at
+; $21 awake or in the shared window asleep: no stock setup routine reads r0
+; before writing it (all 13 checked, 29 Oct 2026).
 ; ---------------------------------------------------------------------------
 dbt_tap:
+        move    x:>$420,a               ; the track, 0..7
+        asl     #2,a,a                  ; one record of four words per track
+        add     #>@ROFF@,a              ; its record: BEAT COUNT LAST LEVEL
+        move    a1,r0
+        add     #>$000003,a
+        move    a1,r1                   ; its LEVEL word
+        move    x:>$208,r6              ; --- displaced --- (here: it fills the AGU gap)
+        move    y:(r0)+,b               ; BEAT: written by the dB666s that key this track
+        move    y:(r0)+,a               ; COUNT: this tap's own
+        move    y:(r0),x0               ; LAST: the BEAT this tap saw last, its own
+        cmp     x0,b
+        beq     dbt_same
+        move    b,y:(r0)-               ; a new beat: LAST = BEAT, back to COUNT
+        move    #>$000008,a              ; awake for WANT_BLOCKS more blocks
+        move    a,y:(r0)+
+        bra     dbt_run
+dbt_same:
+        tst     a
+        beq     dbt_idle                ; nobody keys this track
+        sub     #>$1,a                  ; count down one block
+        move    (r0)-                   ; back to COUNT
+        move    a,y:(r0)+
+dbt_run:
         clr     a
         move    #0,r0
-        do      #<$20,>dbt_sum
+        nop                             ; two moves between writing r0 and using it
+        nop
         move    x:(r0)+,x0
-        mac     x0,x0,a
+        do      #<$20,>dbt_sum
+        mac     x0,x0,a x:(r0)+,x0      ; sum and load the next in one cycle
 dbt_sum:
         asr     #$5,a,a                 ; / 32: the mean of (L^2 + R^2)/2
         move    a,x0                    ; limited below 1.0
-        move    x:>$420,a               ; the track, 0..7
-        sub     #>@COREBASE@,a          ; this core's own 0..3
-        move    a1,n1
-        move    #>@SBASE@,r1
-        lua     (r1)+n1,r1
-        move    x0,y:(r1)
-        move    x:>$208,r6              ; --- displaced ---
+        move    x0,y:(r1)+              ; LEVEL (stock's store form; stock reloads r1 after the site)
+        rts
+dbt_idle:
+        clr     a
+        move    a,y:(r1)+               ; LEVEL = 0: a KEY turned on never reads a stale level
         rts
