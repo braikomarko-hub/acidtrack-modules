@@ -24,15 +24,17 @@ from what is inferred.
 | [dB666](modules/db666/README.md) | DSP insert + side-chain bus | a model of the dbx 160 compressor (1976) from its schematic, KEY from any track | ✅ as [`vca160`](https://github.com/sambanks/octabam/tree/main/modules/vca160) (VCA160, KEY over KEYBUS) | ✅ |
 | [FET76](modules/fet76/README.md) | DSP insert | a model of the UREI 1176LN FET limiter (1967) from its manual, for the master | ✅ [`fet76`](https://github.com/sambanks/octabam/tree/main/modules/fet76) | ✅ |
 | [AtoMizer](modules/atomizer/README.md) | DSP FX2 | a granular delay after the Red Panda Particle (re-derived from its manual) | — | ✅ ACIDV79 (27 Oct 2026); out of the newest remix |
-| [MORPH](modules/morph/README.md) | ColdFire | a track's scene morph played by itself, at the tempo; v1.2 adds the way back (RET, CURV, END: risers that come back "as if by hand") | ✅ v1 [`morph`](https://github.com/sambanks/octabam/tree/main/modules/morph); v1.1 + v1.2 proposed | v1.1 ✅; v1.2 not yet |
-| [STROJ](modules/stroj/README.md) | ColdFire machine | a drone machine: four plates with cross phase modulation (after SOMA's Lyra-8) and two sub-octaves (after Moog's Subharmonicon) | — | not yet (emulator only) |
+| [MORPH](modules/morph/README.md) | ColdFire | a track's scene morph played by itself, at the tempo; v1.2 adds the way back (RET, CURV, END: risers that come back "as if by hand") | ✅ [`morph`](https://github.com/sambanks/octabam/tree/main/modules/morph), with v1.1 and v1.2 | v1.1 ✅; v1.2 is in the image on the unit since 23 Nov 2026 (ACIDF10) |
+| [STROJ](modules/stroj/README.md) | ColdFire machine | a drone machine: four plates with cross phase modulation (after SOMA's Lyra-8) and two sub-octaves (after Moog's Subharmonicon) | — | ✅ ran on the author's MKI (reported by the author, 24 Nov 2026); its cost is not measured there |
 
 OCTA303 SEAM also needs OCTA303; dEVILish works on OCTA-303 tracks; MORPH needs octabam's STORE.
 
 ## The remixes
 
-- [`acidhyb`](remixes/acidhyb/README.md): **the author's current live image** (ACIDV97, then
-  ACIDV98 with MORPH v1.2): aCiDtRacK with the hybrid OCTA-303.
+- [`acidhyb`](remixes/acidhyb/README.md): aCiDtRacK with the hybrid OCTA-303 (OCTA303 SEAM): images
+  ACIDV97, then ACIDV98 with MORPH v1.2.
+- At the time of writing (24 Nov 2026) the author's unit runs a vFable test image, ACIDF10 (see
+  "Shelved or elsewhere").
 - [`acidtrack`](remixes/acidtrack/README.md): aCiDtRacK, the author's live set.
 - `remixes/test/…`: one module each, for its gates.
 
@@ -48,7 +50,7 @@ not copied here; the links go to the branch where each one lives.
 | BOOT_SMILE (an acid smiley at power-on) | [`trackmenu`](https://github.com/braikomarko-hub/octabam/tree/trackmenu) | made, kept for a final image |
 | MORPH LOCK page (recorded knob values as bars) | [`morph-lock`](https://github.com/braikomarko-hub/octabam/tree/morph-lock) | emulator only |
 | MORPH v2 | [`morph-v2`](https://github.com/braikomarko-hub/octabam/tree/morph-v2) | shelved (26 Oct 2026) |
-| vFable, a second OCTA303 engine (developed separately) | branches `octa303-fable-*` and `octa303_optimus*` of the fork | work in progress |
+| vFable, a second OCTA303 engine (developed separately) with its own hybrid: with dEVILish on FX1 of an OCTA-303 track, the filter, the VCA, DRIV, MUFF, FM and SWP run on the DSP inside dEVILish (a 640-word insert); without dEVILish on FX1, or with it on FX2, the voice runs on the ColdFire as before | branch [`octa303_optimus_23`](https://github.com/braikomarko-hub/octabam/tree/octa303_optimus_23) of the fork (earlier: `octa303-fable-*`) | work in progress. Test images ACIDF08 (19 Nov 2026) and ACIDF10 (23 Nov 2026) have run on the author's MKI. Measured on ACIDF10 with octabam's LOAD METER: a dEVILish voice slot costs 277 cycles a sample (6.1 % of a frame). Known in ACIDF10: with FM on, some frames are refused and come out silent (fixed on the branch, not yet on the unit); notes held by a chain of slides sometimes close early (also in older images; open) |
 
 ## Using them
 
