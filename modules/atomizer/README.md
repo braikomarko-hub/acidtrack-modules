@@ -189,9 +189,9 @@ the reference, not the pedal.
 
 ## Open
 
-- **The unit.** Nothing has run on hardware: not the code from the window, not
-  the cost beside other effects (LOAD METER will show it), not the ~25 ms of dry
-  audio while the block arrives.
+- **The unit.** AtoMizer ran on the author's MKI in image ACIDV79 (27 Oct 2026; reported by the
+  author). Not measured there: the cost beside other effects (LOAD METER will show it) and the
+  ~25 ms of dry audio while the block arrives.
 - **T8's FX2.** AtoMizer is silent there in `test/atomizer` (above). A toast
   like the loader's `NEEDS Tn FX2 FREE` would say why; not done.
 - Not yet: the V1 colour (the FV-1's 1s3e10m memory and 32 kHz band limit),

@@ -90,7 +90,8 @@ are the head). Remixes: `test/stroj` (STROJ alone), `test/stroj-303` (beside OCT
   clears the signature; LFO SETUP reads `PB NOTE`; CHROMATIC's TRIG 16 / 1 / 13 play D#2 / C1 / C2;
   a signed track with a trig reaches the outputs with C2, its octave and the /2 /3 sub-octaves.
   Run on both test remixes (30 Oct 2026).
-- Not run on a unit.
+- On the unit: it has run on the author's MKI (reported by the author, 24 Nov 2026; the image and the
+  date of the run are not recorded here). Its ColdFire cost has not been measured there.
 
 ## Not yet
 
